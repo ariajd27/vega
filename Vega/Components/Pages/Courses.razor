@@ -10,7 +10,7 @@
 
 @if (courses == null)
 {
-    <p><em>@statusMsg</em></p>
+    <p><em>Loading...</em></p>
 }
 else
 {
@@ -27,9 +27,9 @@ else
             @foreach (var course in courses)
             {
                 <tr>
-                    <td>@QuerySubject @course.CatalogNumber</td>
+                    <td>@course.FormattedCatalogNumber()</td>
                     <td>@course.Title</td>
-                    <td>@course.DescribeTypicalTerms()</td>
+                    <td>@course.FormattedTypicalTerms()</td>
                     <td>@course.InternalId</td>
                 </tr>
             }
@@ -41,7 +41,6 @@ else
     [Parameter]
     public string? QuerySubject { get; set; }
 
-    private string statusMsg = "Loading...";
     private Course[]? courses;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -55,12 +54,12 @@ else
 
     private async Task LoadCoursesAsync()
     {
-        var result = await ProtectedSessionStore.GetAsync<Subject[]>($"subjects");
-        var subjects = result.Success ? result.Value : await Subject.GetAllSubjectsAsync();
-        Subject subject = subjects.First(x => x.Name == QuerySubject);
-
-        courses = await subject.GetCourses();
-
-        await ProtectedSessionStore.SetAsync("subjects", subjects);
+        var result = await ProtectedSessionStore.GetAsync<Course[]>($"courses-{QuerySubject}");
+        if (result.Success) courses = result.Value;
+        else
+        {
+            courses = await Course.GetAllCoursesAsync(QuerySubject);
+            await ProtectedSessionStore.SetAsync($"courses-{QuerySubject}", courses);
+        }
     }
 }

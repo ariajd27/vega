@@ -15,5 +15,10 @@
         public readonly APIComponent[] components = components;
         public readonly APIAttribute[] attributes = attributes;
         public readonly APIOfferingDetails[] offerings = offerings;
+
+        public static async Task<APICourseDetails> GetCourseDetailsAsync(string internalId, string offeringNumber) =>
+            await HttpRequester.MakeHttpRequestAsync<APICourseDetails>
+                ($"https://pitcsprd.csps.pitt.edu/psc/pitcsprd/EMPLOYEE/SA/s/WEBLIB_HCX_CM.H_COURSE_CATALOG.FieldFormula.IScript_Catalog" +
+                $"CourseDetails?institution=UPITT&course_id={internalId}&effdt=2018-06-30&crse_offer_nbr={offeringNumber}&use_catalog_print=Y");
     }
 }
