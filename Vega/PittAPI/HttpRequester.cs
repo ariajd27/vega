@@ -1,17 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Vega.PittAPI;
 
-namespace Vega
+namespace Vega.PittAPI
 {
-    public interface IHttpArrayResponse<T>
-    {
-        public T[] GetContents();
-    }
-
     public static class HttpRequester
     {
         private static readonly JsonSerializerOptions options = new() { IncludeFields = true };

@@ -1,5 +1,6 @@
 ﻿@page "/subjects"
 @attribute [StreamRendering]
+@rendermode InteractiveServer
 
 <PageTitle>Subjects</PageTitle>
 
@@ -41,12 +42,12 @@ else
     {
         if (firstRender)
         {
-            await LoadDataAsync();
+            await LoadSubjectsAsync();
             StateHasChanged();
         }
     }
 
-    private async Task LoadDataAsync()
+    private async Task LoadSubjectsAsync()
     {
         var result = await ProtectedSessionStore.GetAsync<Subject[]>("subjects");
         if (result.Success)

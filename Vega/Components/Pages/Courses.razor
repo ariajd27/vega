@@ -1,5 +1,6 @@
 ﻿@page "/courses/{QuerySubject}"
 @attribute [StreamRendering]
+@rendermode InteractiveServer
 
 <PageTitle>Courses</PageTitle>
 
@@ -47,25 +48,18 @@ else
     {
         if (firstRender)
         {
-            await LoadDataAsync();
+            await LoadCoursesAsync();
             StateHasChanged();
         }
     }
 
-    private async Task LoadDataAsync()
+    private async Task LoadCoursesAsync()
     {
         var result = await ProtectedSessionStore.GetAsync<Subject[]>($"subjects");
         var subjects = result.Success ? result.Value : await Subject.GetAllSubjectsAsync();
         Subject subject = subjects.First(x => x.Name == QuerySubject);
-        if (subject.Polled)
-        {
-            courses = subject.Courses;
-        }
-        else
-        {
-            await subject.GetCourses();
-            courses = subject.Courses;
-        }
+
+        courses = await subject.GetCourses();
 
         await ProtectedSessionStore.SetAsync("subjects", subjects);
     }
