@@ -1,0 +1,54 @@
+﻿body, html {
+	background-color: #000;
+	color: #999;
+
+	font-family: "Fira Mono", monospace;
+	font-size: 16px;
+	line-height: 1.5rem;
+}
+
+.page {
+	max-width: 96rem;
+	margin: 1rem auto;
+
+	display: grid;
+	grid-template-areas:
+		"head head"
+		"side main"
+		"foot foot";
+	grid-column-gap: 2rem;
+	grid-row-gap: 2rem;
+	grid-template-columns: 15rem minmax(0, 1fr);
+}
+
+.page_header {
+	grid-area: head;
+	height: min-content;
+}
+
+.page_sidebar {
+	grid-area: side;
+	position: sticky;
+	top: 1rem;
+	right: 1rem;
+	width: min-content;
+	max-height: 15rem;
+}
+
+.page_body {
+	grid-area: main;
+	padding: 2rem;
+	width: 100%;
+
+	background-color: #121212;
+	color: #AAA;
+}
+
+.page_footer {
+	grid-area: foot;
+	height: min-content;
+}
+
+.table {
+	width: 100%;
+}

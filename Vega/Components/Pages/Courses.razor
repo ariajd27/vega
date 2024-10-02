@@ -1,0 +1,59 @@
+﻿@page "/courses/{subject}"
+@attribute [StreamRendering]
+
+<PageTitle>Courses</PageTitle>
+
+<h1>Courses</h1>
+
+<p>Here is a list of all @Subject courses:</p>
+
+@if (courses == null)
+{
+    <p><em>@statusMsg</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Number</th>
+                <th>Title</th>
+                <th>Typically offered</th>
+                <th>Internal ID</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var course in courses)
+            {
+                <tr>
+                    <td>@Subject @course.catalogNumber</td>
+                    <td>@course.title</td>
+                    <td>@course.DescribeTypicalTerms()</td>
+                    <td>@course.internalId</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter]
+    public string? Subject { get; set;  }
+
+    private string statusMsg = "Loading...";
+    private Course[]? courses;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await ProtectedSessionStore.GetAsync<Course[]>($"courses-{Subject}");
+        if (result.Success) courses = result.Value;
+        else
+        {
+            var subjects = await ProtectedSessionStore.GetAsync<Subject[]>("subjects");
+            var subject = subjects.Value.First(x => x.name == Subject);
+            await subject.GetCourses();
+            courses = subject.Courses;
+            await ProtectedSessionStore.SetAsync("subjects", subjects.Value);
+        }
+    }
+}

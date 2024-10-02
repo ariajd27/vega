@@ -1,0 +1,54 @@
+﻿@page "/subjects"
+@attribute [StreamRendering]
+
+<PageTitle>Subjects</PageTitle>
+
+<h1>Subjects</h1>
+
+<p>Here is a list of all Pitt catalog subjects:</p>
+
+@if (subjects == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Subject</th>
+                <th>Description</th>
+                <th>Courses</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var subject in subjects)
+            {
+                <tr>
+                    <td>@subject.name</td>
+                    <td>@subject.description</td>
+                    <td><a href="/courses/@subject.name">Course list</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private Subject[]? subjects;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // try loading previous results
+        var result = await ProtectedSessionStore.GetAsync<Subject[]>("subjects");
+        if (result.Success)
+        {
+            subjects = result.Value;
+        }
+        else
+        {
+            subjects = await Subject.GetAllSubjectsAsync();
+            await ProtectedSessionStore.SetAsync("subjects", subjects);
+        }
+    }
+}
