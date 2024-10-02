@@ -2,16 +2,16 @@
 {
     public class Course(Subject subject, APICourse course)
     {
-        public readonly Subject subject = subject;
-        public readonly int catalogNumber = int.Parse(course.catalog_nbr);
-        public readonly string title = course.descr;
-        public readonly int internalId = int.Parse(course.crse_id);
-        public readonly bool[] typicalTerms = [course.typ_offr.Contains("FALL"), course.typ_offr.Contains("SPR"), course.typ_offr.Contains("SUM")];
+        public Subject Subject { get; } = subject;
+        public int CatalogNumber { get; } = int.Parse(course.catalog_nbr);
+        public string Title { get; } = course.descr;
+        public int InternalId { get; } = int.Parse(course.crse_id);
+        public bool[] TypicalTerms { get; } = [course.typ_offr.Contains("FALL"), course.typ_offr.Contains("SPR"), course.typ_offr.Contains("SUM")];
 
         public string DescribeTypicalTerms()
         {
             string[] termNames = ["fall", "spring", "summer"];
-            return Enumerable.Range(0, 3).Where(x => typicalTerms[x]).Select(x => termNames[x]).Aggregate((x, y) => x + ", " + y);
+            return Enumerable.Range(0, 3).Where(x => TypicalTerms[x]).Select(x => termNames[x]).Aggregate((x, y) => x + ", " + y);
         }
     }
 

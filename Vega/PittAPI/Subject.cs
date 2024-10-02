@@ -2,15 +2,15 @@
 {
     public class Subject(APISubject subject)
     {
-        public readonly string name = subject.subject;
-        public readonly string description = subject.descr;
+        public string Name { get; } = subject.subject;
+        public string Description { get; } = subject.descr;
 
         public Course[]? Courses { get; private set; }
         public bool Polled => Courses == null;
 
         public async Task GetCourses()
         {
-            var apiCourses = await APICourse.GetAllCoursesAsync(name);
+            var apiCourses = await APICourse.GetAllCoursesAsync(Name);
             Courses = apiCourses.Select(x => new Course(this, x)).ToArray();
         }
 

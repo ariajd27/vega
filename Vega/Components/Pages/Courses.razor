@@ -1,11 +1,11 @@
-﻿@page "/courses/{subject}"
+﻿@page "/courses/{QuerySubject}"
 @attribute [StreamRendering]
 
 <PageTitle>Courses</PageTitle>
 
 <h1>Courses</h1>
 
-<p>Here is a list of all @Subject courses:</p>
+<p>Here is a list of all @QuerySubject courses:</p>
 
 @if (courses == null)
 {
@@ -26,10 +26,10 @@ else
             @foreach (var course in courses)
             {
                 <tr>
-                    <td>@Subject @course.catalogNumber</td>
-                    <td>@course.title</td>
+                    <td>@QuerySubject @course.CatalogNumber</td>
+                    <td>@course.Title</td>
                     <td>@course.DescribeTypicalTerms()</td>
-                    <td>@course.internalId</td>
+                    <td>@course.InternalId</td>
                 </tr>
             }
         </tbody>
@@ -38,22 +38,35 @@ else
 
 @code {
     [Parameter]
-    public string? Subject { get; set;  }
+    public string? QuerySubject { get; set; }
 
     private string statusMsg = "Loading...";
     private Course[]? courses;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var result = await ProtectedSessionStore.GetAsync<Course[]>($"courses-{Subject}");
-        if (result.Success) courses = result.Value;
+        if (firstRender)
+        {
+            await LoadDataAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        var result = await ProtectedSessionStore.GetAsync<Subject[]>($"subjects");
+        var subjects = result.Success ? result.Value : await Subject.GetAllSubjectsAsync();
+        Subject subject = subjects.First(x => x.Name == QuerySubject);
+        if (subject.Polled)
+        {
+            courses = subject.Courses;
+        }
         else
         {
-            var subjects = await ProtectedSessionStore.GetAsync<Subject[]>("subjects");
-            var subject = subjects.Value.First(x => x.name == Subject);
             await subject.GetCourses();
             courses = subject.Courses;
-            await ProtectedSessionStore.SetAsync("subjects", subjects.Value);
         }
+
+        await ProtectedSessionStore.SetAsync("subjects", subjects);
     }
 }

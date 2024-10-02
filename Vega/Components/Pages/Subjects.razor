@@ -25,9 +25,9 @@ else
             @foreach (var subject in subjects)
             {
                 <tr>
-                    <td>@subject.name</td>
-                    <td>@subject.description</td>
-                    <td><a href="/courses/@subject.name">Course list</a></td>
+                    <td>@subject.Name</td>
+                    <td>@subject.Description</td>
+                    <td><a href="/courses/@subject.Name">Course list</a></td>
                 </tr>
             }
         </tbody>
@@ -37,9 +37,17 @@ else
 @code {
     private Subject[]? subjects;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // try loading previous results
+        if (firstRender)
+        {
+            await LoadDataAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
         var result = await ProtectedSessionStore.GetAsync<Subject[]>("subjects");
         if (result.Success)
         {
