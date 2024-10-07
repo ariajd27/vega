@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.ComponentModel;
+using System.Linq;
 using System.Text.Json.Serialization;
 using System.Xml.Linq;
 using Vega.Components.Pages;
@@ -16,15 +17,25 @@ namespace Vega.PittAPI
         public string Title { get; }
         public string Description { get; }
 
-        public string Campus { get; }
-        public string CampusDescr { get; set; }
-        public string FormattedCampus() => Campus.Length > 0 ? CampusDescr : "unlisted";
+        public string? Campus { get; }
+
+        public static Dictionary<string, string> campusNames = new() 
+        { 
+            { "PIT", "Pittsburgh" },
+            { "UPB", "Bradford" },
+            { "UPG", "Greensburg" },
+            { "UPJ", "Johnstown" },
+            { "UPT", "Titusville" }
+        };
+        public string FormattedCampus() => Campus != null ? campusNames[Campus] : "unlisted";
 
         public Terms TypicalTerms { get; }
 
         public int MinNumCredits { get; }
         public int MaxNumCredits { get; }
         public string FormattedNumCredits() => MinNumCredits == MaxNumCredits ? MinNumCredits.ToString() : MinNumCredits.ToString() + "-" + MaxNumCredits.ToString();
+
+        public Attribute[] Attributes { get; }
 
         public static async Task<Course[]> GetAllCoursesAsync(string subject)
         {
@@ -65,11 +76,11 @@ namespace Vega.PittAPI
             InternalId = int.Parse(apiCourse.crse_id);
             Title = apiCourse.descr;
             Description = apiDetails.descrlong ?? "No description provided for this course.";
-            Campus = apiDetails.offerings is not null ? apiDetails.offerings[0].campus_cd : "unlisted";
-            CampusDescr = apiDetails.offerings is not null ? apiDetails.offerings[0].campus : "Unlisted";
+            Campus = apiDetails.offerings?[0].campus_cd;
             TypicalTerms = ParseAPITerms(apiCourse.typ_offr);
             MinNumCredits = apiDetails.units_minimum;
             MaxNumCredits = apiDetails.units_maximum;
+            Attributes = apiDetails.attributes.Select(x => new Attribute(x)).ToArray();
         }
 
         public static Terms ParseAPITerms(string apiTerms)
@@ -82,7 +93,7 @@ namespace Vega.PittAPI
 
         [JsonConstructor]
         public Course(string subject, int catalogNumber, int internalId, string title, string description, 
-            Terms typicalTerms, string campus, string campusDescr, int minNumCredits, int maxNumCredits)
+            Terms typicalTerms, string? campus, int minNumCredits, int maxNumCredits, Attribute[] attributes)
         {
             Subject = subject;
             CatalogNumber = catalogNumber;
@@ -90,10 +101,10 @@ namespace Vega.PittAPI
             Title = title;
             Description = description;
             Campus = campus;
-            CampusDescr = campusDescr;
             TypicalTerms = typicalTerms;
             MinNumCredits = minNumCredits;
             MaxNumCredits = maxNumCredits;
+            Attributes = attributes;
         }
     }
 

@@ -169,3 +169,25 @@ ul.header_nav {
 	font-weight: bold;
 	color: #BBB;
 }
+
+.form, .validation-errors {
+	list-style: none;
+}
+
+.validation-errors {
+	font-style: italic;
+}
+
+.form select, .form button, .form input {
+	font-size: 14px;
+	font-family: "Fira Mono", monospace;
+
+	border: 1px solid #AAA;
+	background-color: #111;
+	color: #999;
+	accent-color: #d99;
+}
+
+.form input:focus {
+	border: none;
+}

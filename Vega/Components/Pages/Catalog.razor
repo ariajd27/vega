@@ -1,6 +1,7 @@
 ﻿@page "/catalog"
 @attribute [StreamRendering]
 @using System.ComponentModel.DataAnnotations
+@using System.ComponentModel
 @rendermode InteractiveServer
 
 <PageTitle>Search Catalog</PageTitle>
@@ -11,62 +12,90 @@
 
     <p>
         This page provides more advanced search options for Pitt's catalog than those available at either first-party location. 
-        Note however that due to current technical limitations -- which <emph>will</emph> be resolved in the future -- a subject
-        must be provided to narrow down the search.
+        Note however that due to current technical limitations -- which will be resolved in the future -- a subject must be 
+        provided to narrow down the search.
     </p>
 
     <EditForm Model="NewQuery" OnValidSubmit="Submit" FormName="CatalogSearchForm">
         <DataAnnotationsValidator />
-        <ValidationSummary />
-        <label>
-            Subject:
-            <InputSelect @bind-Value="NewQuery!.Subject">
-                <option value="">
-                    select...
-                </option>
-                @if (subjects != null)
-                {
-                    @foreach (var subject in subjects)
-                    {
-                        <option checked="@(NewQuery!.Subject == subject.Name)" value="@subject.Name">
-                            @subject.Name @subject.Description
+        <ul class="form">
+            <li>
+                <label>
+                    Subject:
+                    <InputSelect @bind-Value="NewQuery!.Subject">
+                        <option value="">
+                            select...
                         </option>
-                    }
-                }
-            </InputSelect>
-        </label>
-        <label>
-            Campus:
-            <InputSelect @bind-Value="NewQuery!.Campus">
-                <option checked="@(NewQuery!.Campus == "ANY")" value="ANY">
-                    Any
-                </option>
-                <option checked="@(NewQuery!.Campus == "PIT")" value="PIT">
-                    Pittsburgh
-                </option>
-                <option checked="@(NewQuery!.Campus == "UPB")" value="UPB">
-                    Bradford
-                </option>
-                <option checked="@(NewQuery!.Campus == "UPG")" value="UPG">
-                    Greensburg
-                </option>
-                <option checked="@(NewQuery!.Campus == "UPJ")" value="UPJ">
-                    Johnstown
-                </option>
-                <option checked="@(NewQuery!.Campus == "UPT")" value="UPT">
-                    Titusville
-                </option>
-            </InputSelect>
-        </label>
-        <label>
-            Minimum Credits:
-            <InputNumber @bind-Value="NewQuery!.MinCredits" />
-        </label>
-        <label>
-            Maximum Credits:
-            <InputNumber @bind-Value="NewQuery!.MaxCredits" />
-        </label>
-        <button type="submit">Search</button>
+                        @if (subjects != null)
+                        {
+                            @foreach (var subject in subjects)
+                            {
+                                <option checked="@(NewQuery!.Subject == subject.Name)" value="@subject.Name">
+                                    @subject.Name @subject.Description
+                                </option>
+                            }
+                        }
+                    </InputSelect>
+                </label>
+            </li>
+            <li>
+                <label>
+                    Campus:
+                    <InputSelect @bind-Value="NewQuery!.Campus">
+                        <option checked="@(NewQuery!.Campus == "ANY")" value="ANY">
+                            Any
+                        </option>
+                        @foreach (var campus in Course.campusNames)
+                        {
+                            <option checked="@(NewQuery!.Campus == campus.Key)" value="@campus.Key">
+                                @campus.Value
+                            </option>
+                        }
+                    </InputSelect>
+                </label>
+            </li>
+            <li>
+                <label>
+                Typical terms offered:
+                    <ul class="form">
+                        <li>
+                            <label>
+                                fall
+                                <InputCheckbox @bind-Value="NewQuery!.FallTerm" />
+                            </label>
+                        </li>
+                        <li>
+                            <label>
+                                spring
+                                <InputCheckbox @bind-Value="NewQuery!.SpringTerm" />
+                            </label>
+                        </li>
+                        <li>
+                            <label>
+                                summer
+                                <InputCheckbox @bind-Value="NewQuery!.SummerTerm" />
+                            </label>
+                        </li>
+                    </ul>
+                </label>
+            </li>
+            <li>
+                <label>
+                    Minimum credits:
+                    <InputNumber @bind-Value="NewQuery!.MinCredits" />
+                </label>
+            </li>
+            <li>
+                <label>
+                    Maximum credits:
+                    <InputNumber @bind-Value="NewQuery!.MaxCredits" />
+                </label>
+            </li>
+            <li>
+                <button type="submit">Search</button>
+            </li>
+        </ul>
+        <ValidationSummary />
     </EditForm>
 
 </div>
@@ -94,6 +123,18 @@
                     <p>typically offered: @course.TypicalTerms</p>
                     <p>credits: @course.FormattedNumCredits()</p>
                     <p>internal id: @course.InternalId</p>
+                    @if (course.Attributes.Any())
+                    {
+                        <p>attributes:</p>
+                        <ul>
+                            @foreach (var attr in course.Attributes)
+                            {
+                                <li>
+                                    @attr
+                                </li>
+                            }
+                        </ul>
+                    }
                 </ChildContent>
             </CollapsibleHeader>
         }
@@ -117,7 +158,7 @@
     protected override void OnInitialized()
     {
         searched = false;
-        NewQuery ??= new() { Campus = "ANY" };
+        NewQuery ??= new();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -166,20 +207,35 @@
         }
 
         courses = unfilteredCourses.Where(x => FormQuery.Campus == "ANY" || x.Campus == FormQuery.Campus)
-                                   .Where(x => FormQuery.Terms == null || ((int)x.TypicalTerms & int.Parse(FormQuery.Terms)) > 0)
+                                   .Where(x => (x.TypicalTerms & FormQuery.Terms()) > 0)
                                    .Where(x => FormQuery.MinCredits == null || x.MaxNumCredits >= FormQuery.MinCredits)
                                    .Where(x => FormQuery.MaxCredits == null || x.MinNumCredits <= FormQuery.MaxCredits)
                                    .ToArray();
     }
 
-    public class CatalogQuery
+    public class CatalogQuery() : IValidatableObject
     {
         [Required(ErrorMessage = "Subject must be specified.")]
         public string? Subject { get; set; }
 
-        public string? Campus { get; set; }
-        public string? Terms { get; set; }
+        public string? Campus { get; set; } = "ANY";
+
+        public bool FallTerm { get; set; } = true;
+        public bool SpringTerm { get; set; } = true;
+        public bool SummerTerm { get; set; } = true;
+        public Terms Terms() => (Terms)((FallTerm ? 1 : 0) + (SpringTerm ? 2 : 0) + (SummerTerm ? 4 : 0));
+
+        [DisplayName("minimum credits")]
+        [Range(0, int.MaxValue, ErrorMessage = "Credit minimum must be positive.")]
         public int? MinCredits { get; set; }
+        [DisplayName("maximum credits")]
+        [Range(0, int.MaxValue, ErrorMessage = "Credit maximum must be positive.")]
         public int? MaxCredits { get; set; }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext context)
+        {
+            if (MaxCredits < MinCredits) yield return new ValidationResult($"Credit maximum cannot be less than credit minimum.");
+            if (Terms() == PittAPI.Terms.Unlisted) yield return new ValidationResult($"At least one term must be selected.");
+        }
     }
 }
