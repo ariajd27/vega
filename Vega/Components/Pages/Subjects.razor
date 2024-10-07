@@ -1,4 +1,4 @@
-﻿@page "/subjects/{Campus}"
+﻿@page "/subjects"
 @attribute [StreamRendering]
 @rendermode InteractiveServer
 
@@ -21,7 +21,7 @@ else
     @foreach (var subject in subjects)
     {
         <div class="page_body_field">
-            <a class="hidden_link table_row table_body" href="/courses/@Campus/@subject.Name">
+            <a class="hidden_link table_row table_body" href="/courses/@subject.Name">
                 <h2>@subject.Name @subject.Description</h2>
             </a>
         </div>
@@ -29,9 +29,6 @@ else
 }
 
 @code {
-    [Parameter]
-    public required string Campus { get; set; }
-
     private Subject[]? subjects;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

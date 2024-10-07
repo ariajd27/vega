@@ -1,0 +1,185 @@
+﻿@page "/catalog"
+@attribute [StreamRendering]
+@using System.ComponentModel.DataAnnotations
+@rendermode InteractiveServer
+
+<PageTitle>Search Catalog</PageTitle>
+
+<div class="page_body_field">
+
+    <h1>Search Catalog</h1>
+
+    <p>
+        This page provides more advanced search options for Pitt's catalog than those available at either first-party location. 
+        Note however that due to current technical limitations -- which <emph>will</emph> be resolved in the future -- a subject
+        must be provided to narrow down the search.
+    </p>
+
+    <EditForm Model="NewQuery" OnValidSubmit="Submit" FormName="CatalogSearchForm">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <label>
+            Subject:
+            <InputSelect @bind-Value="NewQuery!.Subject">
+                <option value="">
+                    select...
+                </option>
+                @if (subjects != null)
+                {
+                    @foreach (var subject in subjects)
+                    {
+                        <option checked="@(NewQuery!.Subject == subject.Name)" value="@subject.Name">
+                            @subject.Name @subject.Description
+                        </option>
+                    }
+                }
+            </InputSelect>
+        </label>
+        <label>
+            Campus:
+            <InputSelect @bind-Value="NewQuery!.Campus">
+                <option checked="@(NewQuery!.Campus == "ANY")" value="ANY">
+                    Any
+                </option>
+                <option checked="@(NewQuery!.Campus == "PIT")" value="PIT">
+                    Pittsburgh
+                </option>
+                <option checked="@(NewQuery!.Campus == "UPB")" value="UPB">
+                    Bradford
+                </option>
+                <option checked="@(NewQuery!.Campus == "UPG")" value="UPG">
+                    Greensburg
+                </option>
+                <option checked="@(NewQuery!.Campus == "UPJ")" value="UPJ">
+                    Johnstown
+                </option>
+                <option checked="@(NewQuery!.Campus == "UPT")" value="UPT">
+                    Titusville
+                </option>
+            </InputSelect>
+        </label>
+        <label>
+            Minimum Credits:
+            <InputNumber @bind-Value="NewQuery!.MinCredits" />
+        </label>
+        <label>
+            Maximum Credits:
+            <InputNumber @bind-Value="NewQuery!.MaxCredits" />
+        </label>
+        <button type="submit">Search</button>
+    </EditForm>
+
+</div>
+
+@if (searched)
+{
+    @if (courses == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else if (courses.Length > 0)
+    {
+        @foreach (var course in courses)
+        {
+            <CollapsibleHeader>
+                <HeaderContent>
+                    @course.FormattedCatalogNumber() @course.Title
+                </HeaderContent>
+                <ChildContent>
+                    <p>@course.Description</p>
+                    @if (FormQuery.Campus == "ANY")
+                    {
+                        <p>campus: @course.FormattedCampus()</p>
+                    }
+                    <p>typically offered: @course.TypicalTerms</p>
+                    <p>credits: @course.FormattedNumCredits()</p>
+                    <p>internal id: @course.InternalId</p>
+                </ChildContent>
+            </CollapsibleHeader>
+        }
+    }
+    else
+    {
+        <p>No courses found matching search criteria.</p>
+    }
+}
+
+@code {
+    [SupplyParameterFromForm]
+    private CatalogQuery? NewQuery { get; set; }
+
+    private Subject[]? subjects;
+
+    private bool searched;
+    private Course[] courses;
+    private CatalogQuery? FormQuery { get; set; }
+
+    protected override void OnInitialized()
+    {
+        searched = false;
+        NewQuery ??= new() { Campus = "ANY" };
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadSubjectsAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadSubjectsAsync()
+    {
+        var result = await ProtectedSessionStore.GetAsync<Subject[]>("subjects");
+        if (result.Success)
+        {
+            subjects = result.Value;
+        }
+        else
+        {
+            subjects = await Subject.GetAllSubjectsAsync();
+            await ProtectedSessionStore.SetAsync("subjects", subjects);
+        }
+    }
+
+    private async Task Submit()
+    {
+        searched = true;
+        courses = null;
+        StateHasChanged();
+
+        FormQuery = NewQuery;
+        await Search();
+        StateHasChanged();
+    }
+
+    private async Task Search()
+    {
+        Course[]? unfilteredCourses;
+        var result = await ProtectedSessionStore.GetAsync<Course[]>($"courses-{FormQuery.Subject}");
+        if (result.Success) unfilteredCourses = result.Value;
+        else
+        {
+            unfilteredCourses = (await Course.GetAllCoursesAsync(FormQuery.Subject));
+            await ProtectedSessionStore.SetAsync($"courses-{FormQuery.Subject}", unfilteredCourses);
+        }
+
+        courses = unfilteredCourses.Where(x => FormQuery.Campus == "ANY" || x.Campus == FormQuery.Campus)
+                                   .Where(x => FormQuery.Terms == null || ((int)x.TypicalTerms & int.Parse(FormQuery.Terms)) > 0)
+                                   .Where(x => FormQuery.MinCredits == null || x.MaxNumCredits >= FormQuery.MinCredits)
+                                   .Where(x => FormQuery.MaxCredits == null || x.MinNumCredits <= FormQuery.MaxCredits)
+                                   .ToArray();
+    }
+
+    public class CatalogQuery
+    {
+        [Required(ErrorMessage = "Subject must be specified.")]
+        public string? Subject { get; set; }
+
+        public string? Campus { get; set; }
+        public string? Terms { get; set; }
+        public int? MinCredits { get; set; }
+        public int? MaxCredits { get; set; }
+    }
+}

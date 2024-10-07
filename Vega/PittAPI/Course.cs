@@ -18,6 +18,8 @@ namespace Vega.PittAPI
 
         public string Campus { get; }
         public string CampusDescr { get; set; }
+        public string FormattedCampus() => Campus.Length > 0 ? CampusDescr : "unlisted";
+
         public Terms TypicalTerms { get; }
 
         public int MinNumCredits { get; }

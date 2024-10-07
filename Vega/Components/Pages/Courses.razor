@@ -1,4 +1,4 @@
-﻿@page "/courses/{QueryCampus}/{QuerySubject}"
+﻿@page "/courses/{QuerySubject}"
 @attribute [StreamRendering]
 @rendermode InteractiveServer
 
@@ -37,8 +37,15 @@ else
 @code {
     [Parameter]
     public string? QuerySubject { get; set; }
-    [Parameter]
+
+    [SupplyParameterFromQuery(Name = "campus")]
     public string? QueryCampus { get; set; }
+    [SupplyParameterFromQuery(Name = "terms")]
+    public string? QueryTerms { get; set; }
+    [SupplyParameterFromQuery(Name = "minCredits")]
+    public string? QueryMinCredits { get; set; }
+    [SupplyParameterFromQuery(Name = "maxCredits")]
+    public string? QueryMaxCredits { get; set; }
 
     private Course[]? courses;
 
@@ -46,14 +53,20 @@ else
     {
         if (firstRender)
         {
+            await LoadCampusAsync();
             await LoadCoursesAsync();
             StateHasChanged();
         }
     }
 
+    private async Task LoadCampusAsync()
+    {
+        var result = await ProtectedSessionStore.GetAsync<string>("campus");
+    }
+
     private async Task LoadCoursesAsync()
     {
-        Course[] unfilteredCourses;
+        Course[]? unfilteredCourses;
         var result = await ProtectedSessionStore.GetAsync<Course[]>($"courses-{QuerySubject}");
         if (result.Success) unfilteredCourses = result.Value;
         else
@@ -62,6 +75,10 @@ else
             await ProtectedSessionStore.SetAsync($"courses-{QuerySubject}", unfilteredCourses);
         }
 
-        courses = unfilteredCourses.Where(x => x.Campus == QueryCampus).ToArray();
+        courses = unfilteredCourses.Where(x => QueryCampus == null || x.Campus == QueryCampus)
+                                   .Where(x => QueryTerms == null || ((int)x.TypicalTerms & int.Parse(QueryTerms)) > 0)
+                                   .Where(x => QueryMinCredits == null || x.MaxNumCredits >= int.Parse(QueryMinCredits))
+                                   .Where(x => QueryMaxCredits == null || x.MinNumCredits <= int.Parse(QueryMaxCredits))
+                                   .ToArray();
     }
 }
