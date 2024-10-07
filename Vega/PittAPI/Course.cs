@@ -62,7 +62,7 @@ namespace Vega.PittAPI
             CatalogNumber = int.Parse(apiCourse.catalog_nbr);
             InternalId = int.Parse(apiCourse.crse_id);
             Title = apiCourse.descr;
-            Description = apiDetails.descrlong;
+            Description = apiDetails.descrlong ?? "No description provided for this course.";
             Campus = apiDetails.offerings is not null ? apiDetails.offerings[0].campus_cd : "unlisted";
             CampusDescr = apiDetails.offerings is not null ? apiDetails.offerings[0].campus : "Unlisted";
             TypicalTerms = ParseAPITerms(apiCourse.typ_offr);

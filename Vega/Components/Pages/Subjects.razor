@@ -10,28 +10,23 @@
 
     <p>Here is a list of all Pitt catalog subjects:</p>
 
-    @if (subjects == null)
+</div>
+
+@if (subjects == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    @foreach (var subject in subjects)
     {
-        <p><em>Loading...</em></p>
-    }
-    else
-    {
-        <div class="table">
-            <div class="table_row table_head">
-                <div class="table_cell">Subject</div>
-                <div class="table_cell">Description</div>
-            </div>
-            @foreach (var subject in subjects)
-            {
-                <a class="hidden_link table_row table_body" href="/courses/@Campus/@subject.Name">
-                    <div class="table_cell">@subject.Name</div>
-                    <div class="table_cell">@subject.Description</div>
-                </a>
-            }
+        <div class="page_body_field">
+            <a class="hidden_link table_row table_body" href="/courses/@Campus/@subject.Name">
+                <h2>@subject.Name @subject.Description</h2>
+            </a>
         </div>
     }
-
-</div>
+}
 
 @code {
     [Parameter]

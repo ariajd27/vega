@@ -46,6 +46,20 @@
 	color: #AAA;
 }
 
+.page_body_field:first-child {
+	margin-bottom: 1rem;
+}
+
+.page_body_field:not(:first-child) p {
+	line-height: 1.2rem;
+	margin-bottom: 0.5rem;
+	margin-top: 0.5rem;
+}
+
+.page_body_field:not(:first-child) h2:first-child {
+	margin: 0;
+}
+
 .page_footer {
 	grid-area: foot;
 	height: min-content;
@@ -154,8 +168,4 @@ ul.header_nav {
 .table_body.table_row:hover {
 	font-weight: bold;
 	color: #BBB;
-}
-
-.collapsible_header {
-	margin: 0;
 }
