@@ -1,5 +1,10 @@
 ﻿namespace Vega.PittAPI.APITypes
 {
+    public class APICourseDetailsOuter(APICourseDetails course_details)
+    {
+        public readonly APICourseDetails course_details = course_details;
+    }
+
     public class APICourseDetails(string descrlong, int units_minimum, int units_maximum, int units_inc, string grading_basis, string grading_basis_descr,
         string course_title, string rqmnt_designtn, string effdt, APIComponent[] components, APIAttribute[] attributes, APIOfferingDetails[] offerings)
     {
@@ -17,8 +22,8 @@
         public readonly APIOfferingDetails[] offerings = offerings;
 
         public static async Task<APICourseDetails> GetCourseDetailsAsync(string internalId, string offeringNumber) =>
-            await HttpRequester.MakeHttpRequestAsync<APICourseDetails>
+            (await HttpRequester.MakeHttpRequestAsync<APICourseDetailsOuter>
                 ($"https://pitcsprd.csps.pitt.edu/psc/pitcsprd/EMPLOYEE/SA/s/WEBLIB_HCX_CM.H_COURSE_CATALOG.FieldFormula.IScript_Catalog" +
-                $"CourseDetails?institution=UPITT&course_id={internalId}&effdt=2018-06-30&crse_offer_nbr={offeringNumber}&use_catalog_print=Y");
+                $"CourseDetails?institution=UPITT&course_id={internalId}&effdt=2018-06-30&crse_offer_nbr={offeringNumber}")).course_details;
     }
 }

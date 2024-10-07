@@ -14,25 +14,19 @@
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Subject</th>
-                <th>Description</th>
-                <th>Courses</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var subject in subjects)
-            {
-                <tr>
-                    <td>@subject.Name</td>
-                    <td>@subject.Description</td>
-                    <td><a href="/courses/@subject.Name">Course list</a></td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="table">
+        <div class="table_row table_head">
+            <div class="table_cell">Subject</div>
+            <div class="table_cell">Description</div>
+        </div>
+        @foreach (var subject in subjects)
+        {
+            <a class="hidden_link table_row table_body" href="/courses/@subject.Name">
+                <div class="table_cell">@subject.Name</div>
+                <div class="table_cell">@subject.Description</div>
+            </a>
+        }
+    </div>
 }
 
 @code {

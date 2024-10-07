@@ -8,10 +8,10 @@ namespace Vega.PittAPI
         public string Name { get; }
         public string Description { get; }
 
-        public static async Task<Subject[]> GetAllSubjectsAsync()
+        public static async Task<Subject[]> GetAllSubjectsAsync(bool includeSMS = false, bool includeFTD = false)
         {
             var apiSubjects = await APISubject.GetAllSubjectsAsync();
-            return apiSubjects.Select(x => new Subject(x)).ToArray();
+            return apiSubjects.Where(x => (includeSMS || !x.subject.StartsWith("SMS")) && (includeFTD || !x.subject.StartsWith("FTD"))).Select(x => new Subject(x)).ToArray();
         }
 
         public Subject(APISubject subject)
