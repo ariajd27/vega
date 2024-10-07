@@ -1,12 +1,16 @@
-﻿@page "/courses/{QuerySubject}"
+﻿@page "/courses/{QueryCampus}/{QuerySubject}"
 @attribute [StreamRendering]
 @rendermode InteractiveServer
 
 <PageTitle>Courses</PageTitle>
 
-<h1>Courses</h1>
+<div class="page_body_field">
 
-<p>Here is a list of all @QuerySubject courses:</p>
+    <h1>Courses</h1>
+
+    <p>Here is a list of all @QuerySubject courses:</p>
+
+</div>
 
 @if (courses == null)
 {
@@ -33,6 +37,8 @@ else
 @code {
     [Parameter]
     public string? QuerySubject { get; set; }
+    [Parameter]
+    public string? QueryCampus { get; set; }
 
     private Course[]? courses;
 
@@ -56,6 +62,6 @@ else
             await ProtectedSessionStore.SetAsync($"courses-{QuerySubject}", unfilteredCourses);
         }
 
-        courses = unfilteredCourses;
+        courses = unfilteredCourses.Where(x => x.Campus == QueryCampus).ToArray();
     }
 }

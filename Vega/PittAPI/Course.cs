@@ -17,6 +17,7 @@ namespace Vega.PittAPI
         public string Description { get; }
 
         public string Campus { get; }
+        public string CampusDescr { get; set; }
         public Terms TypicalTerms { get; }
 
         public int MinNumCredits { get; }
@@ -62,7 +63,8 @@ namespace Vega.PittAPI
             InternalId = int.Parse(apiCourse.crse_id);
             Title = apiCourse.descr;
             Description = apiDetails.descrlong;
-            Campus = apiDetails.offerings is not null ? apiDetails.offerings[0].campus : "Unlisted";
+            Campus = apiDetails.offerings is not null ? apiDetails.offerings[0].campus_cd : "unlisted";
+            CampusDescr = apiDetails.offerings is not null ? apiDetails.offerings[0].campus : "Unlisted";
             TypicalTerms = ParseAPITerms(apiCourse.typ_offr);
             MinNumCredits = apiDetails.units_minimum;
             MaxNumCredits = apiDetails.units_maximum;
@@ -78,7 +80,7 @@ namespace Vega.PittAPI
 
         [JsonConstructor]
         public Course(string subject, int catalogNumber, int internalId, string title, string description, 
-            Terms typicalTerms, string campus, int minNumCredits, int maxNumCredits)
+            Terms typicalTerms, string campus, string campusDescr, int minNumCredits, int maxNumCredits)
         {
             Subject = subject;
             CatalogNumber = catalogNumber;
@@ -86,6 +88,7 @@ namespace Vega.PittAPI
             Title = title;
             Description = description;
             Campus = campus;
+            CampusDescr = campusDescr;
             TypicalTerms = typicalTerms;
             MinNumCredits = minNumCredits;
             MaxNumCredits = maxNumCredits;

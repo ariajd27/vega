@@ -1,8 +1,10 @@
-﻿<h2 class="collapsible_header" @onclick="Toggle">@HeaderContent</h2>
-@if (isExpanded)
-{
-    @ChildContent
-}
+﻿<div class="page_body_field">
+    <h2 class="collapsible_header" @onclick="Toggle">@HeaderContent</h2>
+    @if (isExpanded)
+    {
+        @ChildContent
+    }
+</div>
 
 @code {
     [Parameter]

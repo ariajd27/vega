@@ -36,6 +36,10 @@
 
 .page_body {
 	grid-area: main;
+}
+
+.page_body_field {
+	margin: 0.5rem;
 	padding: 1rem;
 
 	background-color: #121212;
