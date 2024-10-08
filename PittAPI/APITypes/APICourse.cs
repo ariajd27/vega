@@ -1,4 +1,4 @@
-﻿namespace Vega.PittAPI.APITypes
+﻿namespace PittAPI.APITypes
 {
     public class APICourse(string acad_career, string catalog_nbr, string descr, string crse_id, string crse_offer_nbr, string effdt,
         string typ_offr, string typ_offr_descr, bool has_open_terms, bool multipleOfferings, APIOffering[] offerings)

@@ -1,21 +1,21 @@
 ﻿using System.Text.Json.Serialization;
-using Vega.PittAPI.APITypes;
+using PittAPI.APITypes;
 
-namespace Vega.PittAPI
+namespace PittAPI
 {
     public class Attribute
     {
-        string CategoryShort { get; }
-        string CategoryDescr { get; }
-        string ValueShort { get; }
-        string ValueDescr { get; }
+        public string CategoryShort { get; set; }
+        public string CategoryDescr { get; set; }
+        public string ValueShort { get; set; }
+        public string ValueDescr { get; set; }
 
         public override string ToString()
         {
-            return CategoryDescr + ":" + ValueDescr;
+            return CategoryShort + ": " + ValueDescr;
         }
 
-        public Attribute (APIAttribute attribute)
+        public Attribute(APIAttribute attribute)
         {
             CategoryShort = attribute.crse_attribute;
             CategoryDescr = attribute.crse_attribute_descr;

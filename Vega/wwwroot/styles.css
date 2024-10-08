@@ -191,3 +191,12 @@ ul.header_nav {
 .form input:focus {
 	border: none;
 }
+
+.list {
+	margin: 0;
+}
+
+.list li::marker {
+	content: "- ";
+	color: #333;
+}

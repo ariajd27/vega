@@ -15,4 +15,8 @@
     <Folder Include="wwwroot\favicon\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\PittAPI\PittAPI.csproj" />
+  </ItemGroup>
+
 </Project>

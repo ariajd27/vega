@@ -1,4 +1,4 @@
-﻿namespace Vega.PittAPI.APITypes
+﻿namespace PittAPI.APITypes
 {
     public class APICoursesResponse(APICourse[] courses, string typ_offr_label) : IHttpArrayResponse<APICourse>
     {

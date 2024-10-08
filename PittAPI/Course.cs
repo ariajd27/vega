@@ -1,11 +1,7 @@
-﻿using System.ComponentModel;
-using System.Linq;
-using System.Text.Json.Serialization;
-using System.Xml.Linq;
-using Vega.Components.Pages;
-using Vega.PittAPI.APITypes;
+﻿using System.Text.Json.Serialization;
+using PittAPI.APITypes;
 
-namespace Vega.PittAPI
+namespace PittAPI
 {
     public class Course
     {
@@ -19,8 +15,8 @@ namespace Vega.PittAPI
 
         public string? Campus { get; }
 
-        public static Dictionary<string, string> campusNames = new() 
-        { 
+        public static Dictionary<string, string> campusNames = new()
+        {
             { "PIT", "Pittsburgh" },
             { "UPB", "Bradford" },
             { "UPG", "Greensburg" },
@@ -33,7 +29,9 @@ namespace Vega.PittAPI
 
         public int MinNumCredits { get; }
         public int MaxNumCredits { get; }
-        public string FormattedNumCredits() => MinNumCredits == MaxNumCredits ? MinNumCredits.ToString() : MinNumCredits.ToString() + "-" + MaxNumCredits.ToString();
+        public string FormattedNumCredits() => 
+            MinNumCredits == MaxNumCredits ? MinNumCredits.ToString() 
+            : MinNumCredits.ToString() + "-" + MaxNumCredits.ToString();
 
         public Attribute[] Attributes { get; }
 
@@ -80,7 +78,7 @@ namespace Vega.PittAPI
             TypicalTerms = ParseAPITerms(apiCourse.typ_offr);
             MinNumCredits = apiDetails.units_minimum;
             MaxNumCredits = apiDetails.units_maximum;
-            Attributes = apiDetails.attributes.Select(x => new Attribute(x)).ToArray();
+            Attributes = apiDetails.attributes != null ? apiDetails.attributes.Select(x => new Attribute(x)).ToArray() : [];
         }
 
         public static Terms ParseAPITerms(string apiTerms)
@@ -92,7 +90,7 @@ namespace Vega.PittAPI
         }
 
         [JsonConstructor]
-        public Course(string subject, int catalogNumber, int internalId, string title, string description, 
+        public Course(string subject, int catalogNumber, int internalId, string title, string description,
             Terms typicalTerms, string? campus, int minNumCredits, int maxNumCredits, Attribute[] attributes)
         {
             Subject = subject;

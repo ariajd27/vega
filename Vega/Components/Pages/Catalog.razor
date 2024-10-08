@@ -92,6 +92,20 @@
                 </label>
             </li>
             <li>
+                <label>
+                    Keywords:
+                    <InputText @bind-Value="NewQuery!.Keywords" />
+                    <InputSelect @bind-Value="NewQuery!.KeywordMode">
+                        @foreach (var keywordMode in Enumerable.Range(0, 2).Select(x => (KeywordMode)x))
+                        {
+                            <option checked="@(NewQuery!.KeywordMode == keywordMode)" value="@keywordMode">
+                                @keywordMode
+                            </option>
+                        }
+                    </InputSelect>
+                </label>
+            </li>
+            <li>
                 <button type="submit">Search</button>
             </li>
         </ul>
@@ -126,7 +140,7 @@
                     @if (course.Attributes.Any())
                     {
                         <p>attributes:</p>
-                        <ul>
+                        <ul class="list">
                             @foreach (var attr in course.Attributes)
                             {
                                 <li>
@@ -197,20 +211,28 @@
 
     private async Task Search()
     {
-        Course[]? unfilteredCourses;
-        var result = await ProtectedSessionStore.GetAsync<Course[]>($"courses-{FormQuery.Subject}");
-        if (result.Success) unfilteredCourses = result.Value;
-        else
-        {
-            unfilteredCourses = (await Course.GetAllCoursesAsync(FormQuery.Subject));
-            await ProtectedSessionStore.SetAsync($"courses-{FormQuery.Subject}", unfilteredCourses);
-        }
-
+        Course[] unfilteredCourses = await Course.GetAllCoursesAsync(FormQuery.Subject);
         courses = unfilteredCourses.Where(x => FormQuery.Campus == "ANY" || x.Campus == FormQuery.Campus)
                                    .Where(x => (x.TypicalTerms & FormQuery.Terms()) > 0)
                                    .Where(x => FormQuery.MinCredits == null || x.MaxNumCredits >= FormQuery.MinCredits)
                                    .Where(x => FormQuery.MaxCredits == null || x.MinNumCredits <= FormQuery.MaxCredits)
+                                   .Where(x => FormQuery.Keywords == null || KeywordsSatisfied(x, FormQuery.Keywords, FormQuery.KeywordMode))
                                    .ToArray();
+    }
+
+    private bool KeywordsSatisfied(Course course, string rawKeywords, KeywordMode keywordMode)
+    {
+        var splitKeywords = rawKeywords.Split(' ');
+        if (splitKeywords.Length == 0) return true;
+        (string keyword, bool satisfied)[] keywords = splitKeywords.Select(x => (x.ToLower(), false)).ToArray();
+
+        for (int i = 0; i < keywords.Length; i++)
+        {
+            if (course.Title.ToLower().Contains(keywords[i].keyword)) keywords[i].satisfied = true;
+            if (course.Description.ToLower().Contains(keywords[i].keyword)) keywords[i].satisfied = true;
+        }
+
+        return keywordMode == KeywordMode.Or ? keywords.Any(x => x.satisfied) : keywords.All(x => x.satisfied);
     }
 
     public class CatalogQuery() : IValidatableObject
@@ -225,17 +247,24 @@
         public bool SummerTerm { get; set; } = true;
         public Terms Terms() => (Terms)((FallTerm ? 1 : 0) + (SpringTerm ? 2 : 0) + (SummerTerm ? 4 : 0));
 
-        [DisplayName("minimum credits")]
         [Range(0, int.MaxValue, ErrorMessage = "Credit minimum must be positive.")]
         public int? MinCredits { get; set; }
-        [DisplayName("maximum credits")]
         [Range(0, int.MaxValue, ErrorMessage = "Credit maximum must be positive.")]
         public int? MaxCredits { get; set; }
+
+        public string? Keywords { get; set; }
+        public KeywordMode KeywordMode { get; set; } = KeywordMode.Or;
 
         public IEnumerable<ValidationResult> Validate(ValidationContext context)
         {
             if (MaxCredits < MinCredits) yield return new ValidationResult($"Credit maximum cannot be less than credit minimum.");
             if (Terms() == PittAPI.Terms.Unlisted) yield return new ValidationResult($"At least one term must be selected.");
         }
+    }
+
+    public enum KeywordMode
+    {
+        [Description("and")] And,
+        [Description("or")] Or
     }
 }

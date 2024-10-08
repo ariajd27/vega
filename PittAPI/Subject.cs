@@ -1,7 +1,7 @@
-﻿using System.Text.Json.Serialization;
-using Vega.PittAPI.APITypes;
+﻿using PittAPI.APITypes;
+using System.Text.Json.Serialization;
 
-namespace Vega.PittAPI
+namespace PittAPI
 {
     public class Subject
     {
