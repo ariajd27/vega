@@ -170,7 +170,7 @@ ul.header_nav {
 	color: #BBB;
 }
 
-.form, .validation-errors {
+ul.form, .validation-errors {
 	list-style: none;
 }
 

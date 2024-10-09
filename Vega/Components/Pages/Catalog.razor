@@ -40,6 +40,36 @@
             </li>
             <li>
                 <label>
+                    Catalog number:
+                    <InputSelect @bind-Value="NewQuery!.CatalogNumberMode">
+                        @foreach (var catalogNumberMode in Enumerable.Range(0, 2).Select(x => (CatalogNumberMode)x))
+                        {
+                            <option checked="@(NewQuery!.CatalogNumberMode == catalogNumberMode)" value="@catalogNumberMode">
+                                @catalogNumberMode
+                            </option>
+                        }
+                    </InputSelect>
+                    <span></span>
+                    @if (NewQuery!.CatalogNumberMode == CatalogNumberMode.exact)
+                    {
+                        <InputNumber @bind-Value="NewQuery!.CatalogNumber" />
+                    }
+                    else
+                    {
+                        <InputNumber @bind-Value="NewQuery!.CatalogNumberMin" />
+                        <span>to</span>
+                        <InputNumber @bind-Value="NewQuery!.CatalogNumberMax" />
+                    }
+                </label>
+            </li>
+            <li>
+                <label>
+                    Internal ID:
+                    <InputNumber @bind-Value="NewQuery!.InternalId" />
+                </label>
+            </li>
+            <li>
+                <label>
                     Campus:
                     <InputSelect @bind-Value="NewQuery!.Campus">
                         <option checked="@(NewQuery!.Campus == "ANY")" value="ANY">
@@ -93,8 +123,7 @@
             </li>
             <li>
                 <label>
-                    Keywords:
-                    <InputText @bind-Value="NewQuery!.Keywords" />
+                    Keywords: contains
                     <InputSelect @bind-Value="NewQuery!.KeywordMode">
                         @foreach (var keywordMode in Enumerable.Range(0, 2).Select(x => (KeywordMode)x))
                         {
@@ -103,6 +132,11 @@
                             </option>
                         }
                     </InputSelect>
+                    of
+                    <InputText @bind-Value="NewQuery!.Keywords" style="width: 16rem" />
+                    <ul class="form">
+                        <li>(type one or more keywords separated by spaces)</li>
+                    </ul>
                 </label>
             </li>
             <li>
@@ -186,16 +220,7 @@
 
     private async Task LoadSubjectsAsync()
     {
-        var result = await ProtectedSessionStore.GetAsync<Subject[]>("subjects");
-        if (result.Success)
-        {
-            subjects = result.Value;
-        }
-        else
-        {
-            subjects = await Subject.GetAllSubjectsAsync();
-            await ProtectedSessionStore.SetAsync("subjects", subjects);
-        }
+        subjects = await Subject.GetAllSubjectsAsync();
     }
 
     private async Task Submit()
@@ -212,33 +237,76 @@
     private async Task Search()
     {
         Course[] unfilteredCourses = await Course.GetAllCoursesAsync(FormQuery.Subject);
-        courses = unfilteredCourses.Where(x => FormQuery.Campus == "ANY" || x.Campus == FormQuery.Campus)
+        courses = unfilteredCourses.Where(x => FormQuery.InternalId == null || x.InternalId == FormQuery.InternalId)
+                                   .Where(x => FormQuery.Campus == "ANY" || x.Campus == FormQuery.Campus)
+                                   .Where(x =>
+                                   {
+                                       if (FormQuery.CatalogNumberMode == CatalogNumberMode.exact)
+                                       {
+                                           if (FormQuery.CatalogNumber == null) return true;
+                                           else return x.CatalogNumber == FormQuery.CatalogNumber;
+                                       }
+                                       else
+                                       {
+                                           if (FormQuery.CatalogNumberMin != null)
+                                           {
+                                               if (x.CatalogNumber < FormQuery.CatalogNumberMin) return false;
+                                           }
+
+                                           if (FormQuery.CatalogNumberMax != null)
+                                           {
+                                               if (x.CatalogNumber > FormQuery.CatalogNumberMax) return false;
+                                           }
+
+                                           return true;
+                                       }
+                                   })
                                    .Where(x => (x.TypicalTerms & FormQuery.Terms()) > 0)
                                    .Where(x => FormQuery.MinCredits == null || x.MaxNumCredits >= FormQuery.MinCredits)
                                    .Where(x => FormQuery.MaxCredits == null || x.MinNumCredits <= FormQuery.MaxCredits)
-                                   .Where(x => FormQuery.Keywords == null || KeywordsSatisfied(x, FormQuery.Keywords, FormQuery.KeywordMode))
+                                   .Where(x =>
+                                   {
+                                       if (FormQuery.Keywords is null or "") return true;
+
+                                       (string keyword, bool satisfied)[] keywords;
+
+                                       try
+                                       {
+                                           var splitKeywords = FormQuery.Keywords.Split(' ').Where(x => x.Length > 0);
+                                           keywords = splitKeywords.Select(x => (x.ToLower(), false)).ToArray();
+                                       }
+                                       catch (Exception e)
+                                       {
+                                           return true;
+                                       }
+
+                                       for (int i = 0; i < keywords.Length; i++)
+                                       {
+                                           if (x.Title.ToLower().Contains(keywords[i].keyword)) keywords[i].satisfied = true;
+                                           if (x.Description.ToLower().Contains(keywords[i].keyword)) keywords[i].satisfied = true;
+                                       }
+
+                                       if (FormQuery.KeywordMode == KeywordMode.any) return keywords.Any(x => x.satisfied);
+                                       else return keywords.All(x => x.satisfied);
+                                   })
                                    .ToArray();
-    }
-
-    private bool KeywordsSatisfied(Course course, string rawKeywords, KeywordMode keywordMode)
-    {
-        var splitKeywords = rawKeywords.Split(' ');
-        if (splitKeywords.Length == 0) return true;
-        (string keyword, bool satisfied)[] keywords = splitKeywords.Select(x => (x.ToLower(), false)).ToArray();
-
-        for (int i = 0; i < keywords.Length; i++)
-        {
-            if (course.Title.ToLower().Contains(keywords[i].keyword)) keywords[i].satisfied = true;
-            if (course.Description.ToLower().Contains(keywords[i].keyword)) keywords[i].satisfied = true;
-        }
-
-        return keywordMode == KeywordMode.Or ? keywords.Any(x => x.satisfied) : keywords.All(x => x.satisfied);
     }
 
     public class CatalogQuery() : IValidatableObject
     {
         [Required(ErrorMessage = "Subject must be specified.")]
         public string? Subject { get; set; }
+
+        public CatalogNumberMode CatalogNumberMode { get; set; } = CatalogNumberMode.exact;
+        [Range(0, 9999, ErrorMessage = "Catalog number must be a positive integer at most four digits long.")]
+        public int? CatalogNumber { get; set; }
+        [Range(0, 9999, ErrorMessage = "Catalog number minimum must be a positive integer at most four digits long.")]
+        public int? CatalogNumberMin { get; set; }
+        [Range(0, 9999, ErrorMessage = "Catalog number maximum must be a positive integer at most four digits long.")]
+        public int? CatalogNumberMax { get; set; }
+
+        [Range(0, 999999, ErrorMessage = "Internal ID must be a positive integer at most six digits long.")]
+        public int? InternalId { get; set; }
 
         public string? Campus { get; set; } = "ANY";
 
@@ -253,18 +321,28 @@
         public int? MaxCredits { get; set; }
 
         public string? Keywords { get; set; }
-        public KeywordMode KeywordMode { get; set; } = KeywordMode.Or;
+        public KeywordMode KeywordMode { get; set; } = KeywordMode.any;
 
         public IEnumerable<ValidationResult> Validate(ValidationContext context)
         {
-            if (MaxCredits < MinCredits) yield return new ValidationResult($"Credit maximum cannot be less than credit minimum.");
-            if (Terms() == PittAPI.Terms.Unlisted) yield return new ValidationResult($"At least one term must be selected.");
+            if (CatalogNumberMax < CatalogNumberMin)
+                yield return new ValidationResult($"Catalog number maximum cannot be less than catalog number minimum");
+            if (MaxCredits < MinCredits) 
+                yield return new ValidationResult($"Credit maximum cannot be less than credit minimum.");
+            if (Terms() == PittAPI.Terms.Unlisted) 
+                yield return new ValidationResult($"At least one term must be selected.");
         }
+    }
+
+    public enum CatalogNumberMode
+    {
+        exact,
+        range
     }
 
     public enum KeywordMode
     {
-        [Description("and")] And,
-        [Description("or")] Or
+        all,
+        any
     }
 }
