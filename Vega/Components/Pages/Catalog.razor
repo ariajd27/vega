@@ -87,26 +87,17 @@
             </li>
             <li>
                 <label>
-                Typical terms offered:
+                    Typical terms offered:
                     <ul class="form">
-                        <li>
-                            <label>
-                                fall
-                                <InputCheckbox @bind-Value="NewQuery!.FallTerm" />
-                            </label>
-                        </li>
-                        <li>
-                            <label>
-                                spring
-                                <InputCheckbox @bind-Value="NewQuery!.SpringTerm" />
-                            </label>
-                        </li>
-                        <li>
-                            <label>
-                                summer
-                                <InputCheckbox @bind-Value="NewQuery!.SummerTerm" />
-                            </label>
-                        </li>
+                        @foreach (var term in Enum.GetValues(typeof(Terms)).Cast<Terms>().Skip(1).SkipLast(1))
+                        {
+                            <li>
+                                <label>
+                                    <input type="checkbox" checked="@(NewQuery!.Terms.HasFlag(term))" @onclick="() => ToggleTerm(term)" />
+                                    @term
+                                </label>
+                            </li>
+                        }
                     </ul>
                 </label>
             </li>
@@ -275,7 +266,7 @@
                                            return true;
                                        }
                                    })
-                                   .Where(x => (x.TypicalTerms & FormQuery.Terms()) > 0)
+                                   .Where(x => (x.TypicalTerms & FormQuery.Terms) > 0)
                                    .Where(x => FormQuery.MinCredits == null || x.MaxNumCredits >= FormQuery.MinCredits)
                                    .Where(x => FormQuery.MaxCredits == null || x.MinNumCredits <= FormQuery.MaxCredits)
                                    .Where(x =>
@@ -324,10 +315,7 @@
 
         public string? Campus { get; set; } = "ANY";
 
-        public bool FallTerm { get; set; } = true;
-        public bool SpringTerm { get; set; } = true;
-        public bool SummerTerm { get; set; } = true;
-        public Terms Terms() => (Terms)((FallTerm ? 1 : 0) + (SpringTerm ? 2 : 0) + (SummerTerm ? 4 : 0));
+        public Terms Terms { get; set; } = Terms.Year;
 
         public ExactRangeToggle CreditCountMode { get; set; } = ExactRangeToggle.range;
         [Range(0, double.MaxValue, ErrorMessage = "Credit value must be positive.")]
@@ -346,9 +334,14 @@
                 yield return new ValidationResult($"Catalog number maximum cannot be less than catalog number minimum");
             if (MaxCredits < MinCredits) 
                 yield return new ValidationResult($"Credit maximum cannot be less than credit minimum.");
-            if (Terms() == PittAPI.Terms.Unlisted) 
+            if (Terms == PittAPI.Terms.Unlisted) 
                 yield return new ValidationResult($"At least one term must be selected.");
         }
+    }
+
+    void ToggleTerm(Terms term)
+    {
+        NewQuery.Terms ^= term;
     }
 
     public enum ExactRangeToggle
