@@ -15,7 +15,17 @@ namespace PittAPI
             response.EnsureSuccessStatusCode();
 
             string responseBody = await response.Content.ReadAsStringAsync() ?? throw new Exception($"Server at {url} returned null, which cannot be deserialized.");
-            TResponse output = JsonSerializer.Deserialize<TResponse>(responseBody, options) ?? throw new Exception($"Deserializing response from {url} somehow returned null.");
+
+            TResponse output;
+            try
+            {
+                output = JsonSerializer.Deserialize<TResponse>(responseBody, options) ?? throw new Exception($"Deserializing response from {url} somehow returned null.");
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Failed to deserialize response from {url}:\n{e.Message}\nResponse body was:\n{responseBody}");
+            }
+
             return output;
         }
 

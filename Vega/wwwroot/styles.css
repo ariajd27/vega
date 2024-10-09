@@ -200,3 +200,7 @@ ul.form, .validation-errors {
 	content: "- ";
 	color: #333;
 }
+
+.form .credit_count input, .form .catalog_number input {
+	width: 5rem;
+}

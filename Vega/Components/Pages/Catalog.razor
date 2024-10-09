@@ -42,24 +42,25 @@
                 <label>
                     Catalog number:
                     <InputSelect @bind-Value="NewQuery!.CatalogNumberMode">
-                        @foreach (var catalogNumberMode in Enumerable.Range(0, 2).Select(x => (CatalogNumberMode)x))
+                        @foreach (var exactRangeToggleMode in Enumerable.Range(0, 2).Select(x => (ExactRangeToggle)x))
                         {
-                            <option checked="@(NewQuery!.CatalogNumberMode == catalogNumberMode)" value="@catalogNumberMode">
-                                @catalogNumberMode
+                            <option checked="@(NewQuery!.CatalogNumberMode == exactRangeToggleMode)" value="@exactRangeToggleMode">
+                                @exactRangeToggleMode
                             </option>
                         }
                     </InputSelect>
-                    <span></span>
-                    @if (NewQuery!.CatalogNumberMode == CatalogNumberMode.exact)
-                    {
-                        <InputNumber @bind-Value="NewQuery!.CatalogNumber" />
-                    }
-                    else
-                    {
-                        <InputNumber @bind-Value="NewQuery!.CatalogNumberMin" />
-                        <span>to</span>
-                        <InputNumber @bind-Value="NewQuery!.CatalogNumberMax" />
-                    }
+                    <span class="catalog_number">
+                        @if (NewQuery!.CatalogNumberMode == ExactRangeToggle.exact)
+                        {
+                            <InputNumber @bind-Value="NewQuery!.CatalogNumber" />
+                        }
+                        else
+                        {
+                            <InputNumber @bind-Value="NewQuery!.CatalogNumberMin" />
+                            <span>to</span>
+                            <InputNumber @bind-Value="NewQuery!.CatalogNumberMax" />
+                        }
+                    </span>
                 </label>
             </li>
             <li>
@@ -111,14 +112,27 @@
             </li>
             <li>
                 <label>
-                    Minimum credits:
-                    <InputNumber @bind-Value="NewQuery!.MinCredits" />
-                </label>
-            </li>
-            <li>
-                <label>
-                    Maximum credits:
-                    <InputNumber @bind-Value="NewQuery!.MaxCredits" />
+                    Credit value:
+                    <InputSelect @bind-Value="NewQuery!.CreditCountMode">
+                        @foreach (var exactRangeToggleMode in Enumerable.Range(0, 2).Select(x => (ExactRangeToggle)x))
+                        {
+                            <option checked="@(NewQuery!.CatalogNumberMode == exactRangeToggleMode)" value="@exactRangeToggleMode">
+                                @exactRangeToggleMode
+                            </option>
+                        }
+                    </InputSelect>
+                    <span class="credit_count">
+                        @if (NewQuery!.CreditCountMode == ExactRangeToggle.exact)
+                        {
+                            <InputNumber @bind-Value="NewQuery!.NumCredits" />
+                        }
+                        else
+                        {
+                            <InputNumber @bind-Value="NewQuery!.MinCredits" />
+                            <span>to</span>
+                            <InputNumber @bind-Value="NewQuery!.MaxCredits" />
+                        }
+                    </span>
                 </label>
             </li>
             <li>
@@ -135,7 +149,7 @@
                     of
                     <InputText @bind-Value="NewQuery!.Keywords" style="width: 16rem" />
                     <ul class="form">
-                        <li>(type one or more keywords separated by spaces)</li>
+                        <li>(type one or more keywords separated by commas)</li>
                     </ul>
                 </label>
             </li>
@@ -200,7 +214,7 @@
     private Subject[]? subjects;
 
     private bool searched;
-    private Course[] courses;
+    private Course[]? courses;
     private CatalogQuery? FormQuery { get; set; }
 
     protected override void OnInitialized()
@@ -241,7 +255,7 @@
                                    .Where(x => FormQuery.Campus == "ANY" || x.Campus == FormQuery.Campus)
                                    .Where(x =>
                                    {
-                                       if (FormQuery.CatalogNumberMode == CatalogNumberMode.exact)
+                                       if (FormQuery.CatalogNumberMode == ExactRangeToggle.exact)
                                        {
                                            if (FormQuery.CatalogNumber == null) return true;
                                            else return x.CatalogNumber == FormQuery.CatalogNumber;
@@ -272,8 +286,8 @@
 
                                        try
                                        {
-                                           var splitKeywords = FormQuery.Keywords.Split(' ').Where(x => x.Length > 0);
-                                           keywords = splitKeywords.Select(x => (x.ToLower(), false)).ToArray();
+                                           var splitKeywords = FormQuery.Keywords.Split(',').Where(x => x.Length > 0);
+                                           keywords = splitKeywords.Select(x => (x.Trim())).Select(x => (x.ToLower(), false)).ToArray();
                                        }
                                        catch (Exception e)
                                        {
@@ -297,7 +311,7 @@
         [Required(ErrorMessage = "Subject must be specified.")]
         public string? Subject { get; set; }
 
-        public CatalogNumberMode CatalogNumberMode { get; set; } = CatalogNumberMode.exact;
+        public ExactRangeToggle CatalogNumberMode { get; set; } = ExactRangeToggle.range;
         [Range(0, 9999, ErrorMessage = "Catalog number must be a positive integer at most four digits long.")]
         public int? CatalogNumber { get; set; }
         [Range(0, 9999, ErrorMessage = "Catalog number minimum must be a positive integer at most four digits long.")]
@@ -315,10 +329,13 @@
         public bool SummerTerm { get; set; } = true;
         public Terms Terms() => (Terms)((FallTerm ? 1 : 0) + (SpringTerm ? 2 : 0) + (SummerTerm ? 4 : 0));
 
-        [Range(0, int.MaxValue, ErrorMessage = "Credit minimum must be positive.")]
-        public int? MinCredits { get; set; }
-        [Range(0, int.MaxValue, ErrorMessage = "Credit maximum must be positive.")]
-        public int? MaxCredits { get; set; }
+        public ExactRangeToggle CreditCountMode { get; set; } = ExactRangeToggle.range;
+        [Range(0, double.MaxValue, ErrorMessage = "Credit value must be positive.")]
+        public decimal? NumCredits { get; set; }
+        [Range(0, double.MaxValue, ErrorMessage = "Credit minimum must be positive.")]
+        public decimal? MinCredits { get; set; }
+        [Range(0, double.MaxValue, ErrorMessage = "Credit maximum must be positive.")]
+        public decimal? MaxCredits { get; set; }
 
         public string? Keywords { get; set; }
         public KeywordMode KeywordMode { get; set; } = KeywordMode.any;
@@ -334,7 +351,7 @@
         }
     }
 
-    public enum CatalogNumberMode
+    public enum ExactRangeToggle
     {
         exact,
         range

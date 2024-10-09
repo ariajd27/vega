@@ -27,8 +27,8 @@ namespace PittAPI
 
         public Terms TypicalTerms { get; }
 
-        public int MinNumCredits { get; }
-        public int MaxNumCredits { get; }
+        public decimal MinNumCredits { get; }
+        public decimal MaxNumCredits { get; }
         public string FormattedNumCredits() => 
             MinNumCredits == MaxNumCredits ? MinNumCredits.ToString() 
             : MinNumCredits.ToString() + "-" + MaxNumCredits.ToString();
@@ -87,22 +87,6 @@ namespace PittAPI
             if (apiTerms.Contains("SPR")) terms |= Terms.Spring;
             if (apiTerms.Contains("SUM")) terms |= Terms.Summer;
             return terms;
-        }
-
-        [JsonConstructor]
-        public Course(string subject, int catalogNumber, int internalId, string title, string description,
-            Terms typicalTerms, string? campus, int minNumCredits, int maxNumCredits, Attribute[] attributes)
-        {
-            Subject = subject;
-            CatalogNumber = catalogNumber;
-            InternalId = internalId;
-            Title = title;
-            Description = description;
-            Campus = campus;
-            TypicalTerms = typicalTerms;
-            MinNumCredits = minNumCredits;
-            MaxNumCredits = maxNumCredits;
-            Attributes = attributes;
         }
     }
 
