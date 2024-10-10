@@ -14,7 +14,7 @@ namespace Vega
                 .AddInteractiveServerComponents();
 
             builder.Services.AddDbContext<VegaContext>(options => options.UseLazyLoadingProxies()
-                .UseSqlServer(builder.Configuration.GetConnectionString("VegaContext")));
+                .UseSqlServer(builder.Configuration.GetConnectionString("VegaDB")));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
             builder.Services.AddScoped<VegaService>();
 

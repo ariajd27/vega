@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "mssql1": {
+      "serviceConnectorResourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Web/sites/vega/providers/Microsoft.ServiceLinker/linkers/ConnectionStringsVegaDB_A6851CC7A2",
+      "secretStore": "AzureAppSettings",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Sql/servers/vega-db/databases/VegaDB",
+      "type": "mssql.azure",
+      "connectionId": "ConnectionStrings:VegaDB",
+      "dynamicId": null
+    }
+  }
+}
