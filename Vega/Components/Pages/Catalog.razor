@@ -196,7 +196,7 @@
                     }
                     <p>typically offered: @course.TypicalTerms</p>
                     <p>credits: @course.FormattedNumCredits()</p>
-                    <p>internal id: @course.PittId</p>
+                    <p>requirements: @course.Requirements</p>
                     @if (course.Attributes.Any())
                     {
                         <p>attributes:</p>
@@ -209,6 +209,7 @@
                             }
                         </ul>
                     }
+                    <p>internal id: @course.PittId</p>
                 </ChildContent>
             </CollapsibleHeader>
         }
@@ -266,8 +267,8 @@
         int? minCatalogNumber = FormQuery?.CatalogNumberMode == ExactRangeToggle.exact ? FormQuery?.CatalogNumber : FormQuery?.CatalogNumberMin;
         int? maxCatalogNumber = FormQuery?.CatalogNumberMode == ExactRangeToggle.exact ? FormQuery?.CatalogNumber : FormQuery?.CatalogNumberMax;
 
-        decimal? minNumCredits = FormQuery?.CreditCountMode == ExactRangeToggle.exact ? FormQuery?.NumCredits : FormQuery?.MinCredits;
-        decimal? maxNumCredits = FormQuery?.CreditCountMode == ExactRangeToggle.exact ? FormQuery?.NumCredits : FormQuery?.MaxCredits;
+        int? minNumCredits = FormQuery?.CreditCountMode == ExactRangeToggle.exact ? (int?)(2 * FormQuery?.NumCredits) : (int?)(2 * FormQuery?.MinCredits);
+        int? maxNumCredits = FormQuery?.CreditCountMode == ExactRangeToggle.exact ? (int?)(2 * FormQuery?.NumCredits) : (int?)(2 * FormQuery?.MaxCredits);
 
         var unfilteredCourses = await VegaService.GetCoursesAsync(attributeKey: FormQuery?.Attribute, subjectKey: FormQuery?.Subject, 
             courseId: FormQuery?.InternalId, minCatalogNumber: minCatalogNumber, maxCatalogNumber: maxCatalogNumber, terms: FormQuery?.Terms,
@@ -295,8 +296,7 @@
                                            if (c.Description?.ToLower().Contains(keywords[i].keyword) ?? false) keywords[i].satisfied = true;
                                        }
 
-                                       if (FormQuery.KeywordMode == KeywordMode.any) return keywords.Any(x => x.satisfied);
-                                       else return keywords.All(x => x.satisfied);
+                                       return FormQuery?.KeywordMode == KeywordMode.any ? keywords.Any(x => x.satisfied) : keywords.All(x => x.satisfied);
                                    })
                                    .ToList();
     }

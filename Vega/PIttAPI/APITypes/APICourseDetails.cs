@@ -26,6 +26,6 @@ namespace Vega.PittAPI.APITypes
         public static async Task<APICourseDetails> GetCourseDetailsAsync(string internalId, string offeringNumber) =>
             (await HttpRequester.MakeHttpRequestAsync<APICourseDetailsOuter>
                 ($"https://pitcsprd.csps.pitt.edu/psc/pitcsprd/EMPLOYEE/SA/s/WEBLIB_HCX_CM.H_COURSE_CATALOG.FieldFormula.IScript_Catalog" +
-                $"CourseDetails?institution=UPITT&course_id={internalId}&effdt=2018-06-30&crse_offer_nbr={offeringNumber}")).course_details;
+                $"CourseDetails?institution=UPITT&course_id={internalId}&effdt=2024-10-10&crse_offer_nbr={offeringNumber}")).course_details;
     }
 }

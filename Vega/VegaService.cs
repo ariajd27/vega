@@ -148,7 +148,9 @@ namespace Vega
 
                 foreach (var course in courses)
                 {
-                    var existingCourse = context.Courses.Find(course.InternalId);
+                    var existingCourses = context.Courses.Where(c => c.PittId == course.InternalId 
+                        && c.Campus == course.Campus && c.TypicalTerms == course.TypicalTerms);
+                    var existingCourse = existingCourses.Any() ? existingCourses.First() : null;
 
                     if (existingCourse == null)
                     {
@@ -159,8 +161,9 @@ namespace Vega
                             Description = course.Description,
                             Campus = course.Campus,
                             TypicalTerms = course.TypicalTerms,
-                            MinNumCredits = course.MinNumCredits,
-                            MaxNumCredits = course.MaxNumCredits
+                            MinNumCredits = (int)(2 * course.MinNumCredits),
+                            MaxNumCredits = (int)(2 * course.MaxNumCredits),
+                            Requirements = course.Requirements
                         };
 
                         context.Courses.Add(newCourse);

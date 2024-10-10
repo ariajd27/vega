@@ -33,6 +33,7 @@ namespace Vega.PittAPI
             MinNumCredits == MaxNumCredits ? MinNumCredits.ToString()
             : MinNumCredits.ToString() + "-" + MaxNumCredits.ToString();
 
+        public string? Requirements { get; private set; }
         public IEnumerable<Attribute> Attributes { get; private set; }
 
         public static async Task<Course[]> GetAllCoursesAsync(string subject)
@@ -48,9 +49,21 @@ namespace Vega.PittAPI
             {
                 foreach (var course in courses)
                 {
-                    Course newCourse = new(subject, int.Parse(course.course.catalog_nbr[..4]), int.Parse(course.course.crse_id), course.course.descr, course.details.descrlong, course.details.offerings?[0].campus_cd, ParseAPITerms(course.course.typ_offr), course.details.units_minimum, course.details.units_maximum);
-                    if (course.details.attributes == null) newCourse.Attributes = [];
-                    else newCourse.Attributes = course.details.attributes.Select(x => new Attribute(x.crse_attribute, x.crse_attribute_descr, x.crse_attribute_value, x.crse_attribute_value_descr));
+                    Course newCourse = new() {
+                        Subject = subject,
+                        CatalogNumber = int.Parse(course.course.catalog_nbr[..4]),
+                        InternalId = int.Parse(course.course.crse_id),
+                        Title = course.course.descr,
+                        Description = course.details.descrlong,
+                        Campus = course.details.offerings?[0].campus_cd,
+                        TypicalTerms = ParseAPITerms(course.course.typ_offr),
+                        MinNumCredits = course.details.units_minimum,
+                        MaxNumCredits = course.details.units_maximum,
+                        Requirements = course.details.offerings?[0].req_group ?? "",
+                        Attributes = course.details.attributes?.Select(x => 
+                            new Attribute(x.crse_attribute, x.crse_attribute_descr, x.crse_attribute_value, x.crse_attribute_value_descr)) ?? []
+                    };
+                    
                     output.Add(newCourse);
                 }
             }
@@ -68,20 +81,6 @@ namespace Vega.PittAPI
             }
 
             return output;
-        }
-
-        public Course(string subject, int catalogNumber, int internalId, string title, string description,
-            string? campus, Terms typicalTerms, decimal minNumCredits, decimal maxNumCredits)
-        {
-            Subject = subject;
-            CatalogNumber = catalogNumber;
-            InternalId = internalId;
-            Title = title;
-            Description = description;
-            Campus = campus;
-            TypicalTerms = typicalTerms;
-            MinNumCredits = minNumCredits;
-            MaxNumCredits = maxNumCredits;
         }
 
         public static Terms ParseAPITerms(string apiTerms)

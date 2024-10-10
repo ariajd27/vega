@@ -12,8 +12,9 @@ namespace Vega.Models
         public string? Description { get; set; }
         public string? Campus { get; set; }
         public Terms TypicalTerms { get; set; }
-        public decimal MinNumCredits { get; set; }
-        public decimal MaxNumCredits { get; set; }
+        public int MinNumCredits { get; set; }
+        public int MaxNumCredits { get; set; }
+        public string? Requirements { get; set; }
         public virtual ICollection<DbListing> Listings { get; set; } = [];
         public virtual ICollection<DbAttribute> Attributes { get; set; } = [];
 
