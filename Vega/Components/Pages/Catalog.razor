@@ -25,14 +25,14 @@
                 <label>
                     Subject:
                     <InputSelect @bind-Value="NewQuery!.Subject">
-                        <option value="@null">
+                        <option checked="@(NewQuery!.Subject == "")" value="">
                             All subjects
                         </option>
                         @if (subjects != null)
                         {
                             @foreach (var subject in subjects)
                             {
-                                <option checked="@(NewQuery!.Subject == subject)" value="@subject">
+                                <option checked="@(NewQuery!.Subject == subject.Name)" value="@subject.Name">
                                     @subject.Name @subject.Description
                                 </option>
                             }
@@ -75,7 +75,7 @@
                 <label>
                     Campus:
                     <InputSelect @bind-Value="NewQuery!.Campus">
-                        <option checked="@(NewQuery!.Campus == "ANY")" value="ANY">
+                        <option checked="@(NewQuery!.Campus == "")" value="">
                             Any
                         </option>
                         @foreach (var campus in Course.campusNames)
@@ -130,6 +130,25 @@
             </li>
             <li>
                 <label>
+                    Attribute:
+                    <InputSelect @bind-Value="NewQuery!.Attribute">
+                        <option checked="@(NewQuery!.Attribute == "")" value="">
+                            No filter
+                        </option>
+                        @if (attributes != null)
+                        {
+                            @foreach (var attr in attributes)
+                            {
+                                <option checked="@(NewQuery!.Attribute == attr.BothShort)" value="@attr.BothShort">
+                                    @attr.ToString()
+                                </option>
+                            }
+                        }
+                    </InputSelect>
+                </label>
+            </li>
+            <li>
+                <label>
                     Keywords: contains
                     <InputSelect @bind-Value="NewQuery!.KeywordMode">
                         @foreach (var keywordMode in Enumerable.Range(0, 2).Select(x => (KeywordMode)x))
@@ -171,13 +190,13 @@
                 </HeaderContent>
                 <ChildContent>
                     <p>@course.Description</p>
-                    @if (FormQuery.Campus == "ANY")
+                    @if (FormQuery?.Campus == "")
                     {
                         <p>campus: @course.FormattedCampus()</p>
                     }
                     <p>typically offered: @course.TypicalTerms</p>
                     <p>credits: @course.FormattedNumCredits()</p>
-                    <p>internal id: @course.InternalId</p>
+                    <p>internal id: @course.PittId</p>
                     @if (course.Attributes.Any())
                     {
                         <p>attributes:</p>
@@ -205,6 +224,7 @@
     private CatalogQuery? NewQuery { get; set; }
 
     private IEnumerable<DbSubject>? subjects;
+    private IEnumerable<DbAttribute>? attributes;
 
     private bool searched;
     private IEnumerable<DbCourse>? courses;
@@ -222,6 +242,10 @@
         {
             var subjectsList = await VegaService.GetSubjectsAsync();
             subjects = subjectsList.ToArray();
+
+            var attributesList = await VegaService.GetAttributesAsync();
+            attributes = attributesList.ToArray();
+
             StateHasChanged();
         }
     }
@@ -239,58 +263,62 @@
 
     private async Task Search()
     {
-        var unfilteredCourses = await VegaService.GetCoursesAsync(subject: FormQuery?.Subject);
-        courses = unfilteredCourses.Where(x => FormQuery?.InternalId == null || x.InternalId == FormQuery.InternalId)
-                                   .Where(x => FormQuery?.Campus is null or "ANY" || x.Campus == FormQuery.Campus)
-                                   .Where(x =>
+        var unfilteredCourses = await VegaService.GetCoursesAsync(attribute: attributes?.FirstOrDefault(x => x.BothShort == FormQuery.Attribute, null),
+                                                                  subject: subjects?.FirstOrDefault(x => x.Name == FormQuery?.Subject, null));
+        courses = unfilteredCourses.Where(c => FormQuery?.InternalId == null || c.PittId == FormQuery.InternalId)
+                                   .Where(c => FormQuery?.Campus == "" || c.Campus == FormQuery.Campus)
+                                   .Where(c =>
                                    {
                                        if (FormQuery.CatalogNumberMode == ExactRangeToggle.exact)
                                        {
                                            if (FormQuery.CatalogNumber == null) return true;
-                                           else return x.CatalogNumber == FormQuery.CatalogNumber;
+                                           else return c.Listings.Any(x => x.CatalogNumber == FormQuery.CatalogNumber);
                                        }
                                        else
                                        {
-                                           if (FormQuery.CatalogNumberMin != null)
+                                           return c.Listings.Any(l =>
                                            {
-                                               if (x.CatalogNumber < FormQuery.CatalogNumberMin) return false;
-                                           }
+                                               if (FormQuery.CatalogNumberMin != null)
+                                               {
+                                                   if (l.CatalogNumber < FormQuery.CatalogNumberMin) return false;
+                                               }
 
-                                           if (FormQuery.CatalogNumberMax != null)
-                                           {
-                                               if (x.CatalogNumber > FormQuery.CatalogNumberMax) return false;
-                                           }
+                                               if (FormQuery.CatalogNumberMax != null)
+                                               {
+                                                   if (l.CatalogNumber > FormQuery.CatalogNumberMax) return false;
+                                               }
 
-                                           return true;
+                                               return true;
+                                           });
                                        }
                                    })
-                                   .Where(x => (x.TypicalTerms & FormQuery.Terms) > 0)
-                                   .Where(x =>
+                                   .Where(c => (c.TypicalTerms & FormQuery.Terms) > 0)
+                                   .Where(c =>
                                    {
                                        if (FormQuery.CreditCountMode == ExactRangeToggle.exact)
                                        {
                                            if (FormQuery.NumCredits == null) return true;
-                                           else if (x.MinNumCredits > FormQuery.NumCredits) return false;
-                                           else return x.MaxNumCredits >= FormQuery.NumCredits;
+                                           else if (c.MinNumCredits > FormQuery.NumCredits) return false;
+                                           else return c.MaxNumCredits >= FormQuery.NumCredits;
                                        }
                                        else
                                        {
                                            if (FormQuery.MinCredits != null)
                                            {
-                                               if (x.MaxNumCredits < FormQuery.MinCredits) return false;
+                                               if (c.MaxNumCredits < FormQuery.MinCredits) return false;
                                            }
 
                                            if (FormQuery.MaxCredits != null)
                                            {
-                                               if (x.MinNumCredits > FormQuery.MaxCredits) return false;
+                                               if (c.MinNumCredits > FormQuery.MaxCredits) return false;
                                            }
 
                                            return true;
                                        }
                                    })
-                                   .Where(x =>
+                                   .Where(c =>
                                    {
-                                       if (FormQuery.Keywords is null or "") return true;
+                                       if (FormQuery.Keywords == "") return true;
 
                                        (string keyword, bool satisfied)[] keywords;
 
@@ -299,26 +327,26 @@
                                            var splitKeywords = FormQuery.Keywords.Split(',').Where(x => x.Length > 0);
                                            keywords = splitKeywords.Select(x => (x.Trim())).Select(x => (x.ToLower(), false)).ToArray();
                                        }
-                                       catch (Exception e)
+                                       catch
                                        {
                                            return true;
                                        }
 
                                        for (int i = 0; i < keywords.Length; i++)
                                        {
-                                           if (x.Title.ToLower().Contains(keywords[i].keyword)) keywords[i].satisfied = true;
-                                           if (x.Description.ToLower().Contains(keywords[i].keyword)) keywords[i].satisfied = true;
+                                           if (c.Title.ToLower().Contains(keywords[i].keyword)) keywords[i].satisfied = true;
+                                           if (c.Description.ToLower().Contains(keywords[i].keyword)) keywords[i].satisfied = true;
                                        }
 
                                        if (FormQuery.KeywordMode == KeywordMode.any) return keywords.Any(x => x.satisfied);
                                        else return keywords.All(x => x.satisfied);
                                    })
-                                   .ToArray();
+                                   .ToList();
     }
 
     public class CatalogQuery() : IValidatableObject
     {
-        public DbSubject? Subject { get; set; }
+        public string Subject { get; set; } = "";
 
         public ExactRangeToggle CatalogNumberMode { get; set; } = ExactRangeToggle.range;
         [Range(0, 9999, ErrorMessage = "Catalog number must be a positive integer at most four digits long.")]
@@ -331,7 +359,7 @@
         [Range(0, 999999, ErrorMessage = "Internal ID must be a positive integer at most six digits long.")]
         public int? InternalId { get; set; }
 
-        public string? Campus { get; set; } = "ANY";
+        public string Campus { get; set; } = "";
 
         public Terms Terms { get; set; } = Terms.Year;
 
@@ -343,7 +371,9 @@
         [Range(0, double.MaxValue, ErrorMessage = "Credit maximum must be positive.")]
         public decimal? MaxCredits { get; set; }
 
-        public string? Keywords { get; set; }
+        public string Attribute { get; set; } = "";
+
+        public string Keywords { get; set; } = "";
         public KeywordMode KeywordMode { get; set; } = KeywordMode.any;
 
         public IEnumerable<ValidationResult> Validate(ValidationContext context)

@@ -7,11 +7,11 @@ namespace Vega.Models
     {
         [Key][DatabaseGenerated(DatabaseGeneratedOption.Identity)] public int ListingId { get; set; }
         public int CatalogNumber { get; set; }
-        public int CourseInternalId { get; set; }
-        public DbCourse Course { get; set; } = null!;
+        public int CourseId { get; set; }
+        public virtual DbCourse Course { get; set; }
         public string SubjectName { get; set; } = null!;
-        public DbSubject Subject { get; set; } = null!;
+        public virtual DbSubject Subject { get; set; }
 
-        public string FormattedCatalogNumber() => SubjectName + ' ' + CatalogNumber;
+        public string FormattedCatalogNumber() => SubjectName + ' ' + CatalogNumber.ToString("D4");
     }
 }

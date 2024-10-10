@@ -7,6 +7,6 @@ namespace Vega.Models
     {
         [Key][DatabaseGenerated(DatabaseGeneratedOption.None)] public string Name { get; set; } = null!;
         public string Description { get; set; } = null!;
-        public List<DbListing> Listings { get; } = [];
+        public virtual ICollection<DbListing> Listings { get; set; } = [];
     }
 }

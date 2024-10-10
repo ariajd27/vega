@@ -13,8 +13,8 @@ namespace Vega
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
 
-            builder.Services.AddDbContext<VegaContext>(options => 
-                options.UseSqlServer(builder.Configuration.GetConnectionString("VegaContext")));
+            builder.Services.AddDbContext<VegaContext>(options => options.UseLazyLoadingProxies()
+                .UseSqlServer(builder.Configuration.GetConnectionString("VegaContext")));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
             builder.Services.AddScoped<VegaService>();
 

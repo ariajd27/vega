@@ -6,17 +6,22 @@ namespace Vega.Models
 {
     public class DbCourse
     {
-        [Key][DatabaseGenerated(DatabaseGeneratedOption.None)] public int InternalId { get; set; }
+        [Key][DatabaseGenerated(DatabaseGeneratedOption.Identity)] public int Id { get; set; }
+        public int PittId { get; set; }
         public string Title { get; set; } = null!;
         public string? Description { get; set; }
         public string? Campus { get; set; }
         public Terms TypicalTerms { get; set; }
         public decimal MinNumCredits { get; set; }
         public decimal MaxNumCredits { get; set; }
-        public List<DbListing> Listings { get; } = [];
-        public List<DbAttribute> Attributes { get; } = [];
+        public virtual ICollection<DbListing> Listings { get; set; } = [];
+        public virtual ICollection<DbAttribute> Attributes { get; set; } = [];
 
-        public string AllCatalogNumbers() => Listings.Select(x => $"{x.SubjectName} {x.CatalogNumber}").Aggregate((x, y) => $"{x}, {y}");
+        public string AllCatalogNumbers()
+        {
+            if (Listings.Count == 0) return "";
+            else return Listings.Select(x => x.FormattedCatalogNumber()).Aggregate((x, y) => $"{x}, {y}");
+        }
         public string FormattedCampus() => Campus == null ? "unlisted" : Course.campusNames[Campus];
         public string FormattedNumCredits() => MinNumCredits < MaxNumCredits ? $"{MinNumCredits} - {MaxNumCredits}" : MinNumCredits.ToString();
     }

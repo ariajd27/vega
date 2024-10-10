@@ -25,9 +25,22 @@ namespace Vega
         public async Task<List<DbCourse>> GetCoursesAsync(DbAttribute? attribute = null, DbSubject? subject = null)
         {
             List<DbCourse> unfilteredCourses;
-            if (attribute != null) unfilteredCourses = context.Attributes.Find(attribute.BothShort)?.Courses ?? [];
-            else if (subject != null) unfilteredCourses = context.Subjects.Find(subject.Name)?.Listings.Select(x => x.Course).ToList() ?? [];
-            else unfilteredCourses = await context.Courses.ToListAsync();
+            if (attribute != null)
+            {
+                unfilteredCourses = context.Attributes.Find(attribute.BothShort)?.Courses.ToList() ?? [];
+                if (subject != null)
+                {
+                    unfilteredCourses = unfilteredCourses.Where(c => c.Listings.Any(l => l.SubjectName == subject.Name)).ToList();
+                }
+            }
+            else if (subject != null)
+            {
+                unfilteredCourses = context.Subjects.Find(subject.Name)?.Listings.Select(x => x.Course).ToList() ?? [];
+            }
+            else
+            {
+                unfilteredCourses = await context.Courses.ToListAsync();
+            }
 
             return unfilteredCourses;
         }
@@ -49,13 +62,13 @@ namespace Vega
 
                 foreach (var course in courses)
                 {
-                    var existingCourse = await context.Courses.FindAsync(course.InternalId);
+                    var existingCourse = context.Courses.Find(course.InternalId);
 
                     if (existingCourse == null)
                     {
                         DbCourse newCourse = new()
                         {
-                            InternalId = course.InternalId,
+                            PittId = course.InternalId,
                             Title = course.Title,
                             Description = course.Description,
                             Campus = course.Campus,
@@ -64,14 +77,15 @@ namespace Vega
                             MaxNumCredits = course.MaxNumCredits
                         };
 
-                        await context.Courses.AddAsync(newCourse);
+                        context.Courses.Add(newCourse);
+                        context.SaveChanges();
                         existingCourse = newCourse;
                     }
 
                     DbListing newListing = new()
                     {
                         CatalogNumber = course.CatalogNumber,
-                        CourseInternalId = existingCourse.InternalId,
+                        CourseId = existingCourse.Id,
                         SubjectName = subject.Name
                     };
                     
@@ -79,12 +93,15 @@ namespace Vega
                     context.SaveChanges();
 
                     subject.Listings.Add(newListing);
+                    existingCourse.Listings.Add(newListing);
 
                     foreach (var attribute in course.Attributes)
                     {
                         string bothShort = attribute.CategoryShort + '.' + attribute.ValueShort;
 
-                        if (await context.Attributes.FindAsync(bothShort) == null)
+                        var existingAttribute = await context.Attributes.FindAsync(bothShort);
+
+                        if (existingAttribute == null)
                         {
                             DbAttribute newAttribute = new()
                             {
@@ -95,14 +112,16 @@ namespace Vega
 
                             context.Attributes.Add(newAttribute);
                             context.SaveChanges();
-
-                            existingCourse.Attributes.Add(newAttribute);
-                            newAttribute.Courses.Add(existingCourse);
+                            existingAttribute = newAttribute;
                         }
+
+                        existingCourse.Attributes.Add(existingAttribute);
+                        existingAttribute.Courses.Add(existingCourse);
+                        context.SaveChanges();
                     }
                 }
 
-                await context.SaveChangesAsync();
+                context.SaveChanges();
             }
         }
     }

@@ -9,7 +9,7 @@ namespace Vega.Models
         [Key][DatabaseGenerated(DatabaseGeneratedOption.None)] public string BothShort { get; set; } = null!;
         public string CategoryDescr { get; set; } = null!;
         public string ValueDescr { get; set; } = null!;
-        public List<DbCourse> Courses { get; } = [];
+        public virtual ICollection<DbCourse> Courses { get; set; } = [];
 
         public override string ToString() => BothShort.Split('.')[0] + ": " + ValueDescr;
     }

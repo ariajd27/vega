@@ -15,7 +15,7 @@ namespace Vega
         {
             modelBuilder.Entity<DbListing>().HasOne(l => l.Course)
                                             .WithMany(c => c.Listings)
-                                            .HasForeignKey(l => l.CourseInternalId);
+                                            .HasForeignKey(l => l.CourseId);
 
             modelBuilder.Entity<DbListing>().HasOne(l => l.Subject)
                                             .WithMany(c => c.Listings)
