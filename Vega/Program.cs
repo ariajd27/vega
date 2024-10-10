@@ -1,4 +1,5 @@
 using Vega.Components;
+using Microsoft.EntityFrameworkCore;
 
 namespace Vega
 {
@@ -12,17 +13,37 @@ namespace Vega
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
 
+            builder.Services.AddDbContext<VegaContext>(options => 
+                options.UseSqlServer(builder.Configuration.GetConnectionString("VegaContext")));
+            builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+            builder.Services.AddScoped<VegaService>();
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Error", createScopeForErrors: true);
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
+            }
+            else
+            {
+                app.UseDeveloperExceptionPage();
+                app.UseMigrationsEndPoint();
+            }
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+
+                var context = services.GetRequiredService<VegaContext>();
+                context.Database.EnsureCreated();
+                // DbInitializer.Initialize(context);
             }
 
             app.UseHttpsRedirection();
+
+            app.UseStatusCodePagesWithRedirects("/404");
 
             app.UseStaticFiles();
             app.UseAntiforgery();

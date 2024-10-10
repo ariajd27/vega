@@ -1,4 +1,4 @@
-﻿namespace PittAPI
+﻿namespace Vega.PittAPI
 {
     public interface IHttpArrayResponse<T>
     {

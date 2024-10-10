@@ -1,4 +1,4 @@
-﻿namespace PittAPI.APITypes
+﻿namespace Vega.PittAPI.APITypes
 {
     public class APIOpenTerm(string strm, string descr, bool default_term)
     {

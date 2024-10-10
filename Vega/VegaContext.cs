@@ -1,22 +1,28 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PittAPI;
-using Attribute = PittAPI.Attribute;
+using Vega.Models;
+using Attribute = Vega.PittAPI.Attribute;
 
 namespace Vega
 {
-    public class VegaContext : DbContext
+    public class VegaContext(DbContextOptions<VegaContext> options) : DbContext(options)
     {
-        public VegaContext(DbContextOptions<VegaContext> options) : base(options) { }
-
-        public DbSet<Subject> Subjects { get; set; }
-        public DbSet<Course> Courses { get; set; }
-        public DbSet<Attribute> Attributes { get; set; }
+        public DbSet<DbSubject> Subjects { get; set; }
+        public DbSet<DbCourse> Courses { get; set; }
+        public DbSet<DbListing> Listings { get; set; }
+        public DbSet<DbAttribute> Attributes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Subject>().ToTable("Subject");
-            modelBuilder.Entity<Course>().ToTable("Course");
-            modelBuilder.Entity<Attribute>().ToTable("Attribute");
+            modelBuilder.Entity<DbListing>().HasOne(l => l.Course)
+                                            .WithMany(c => c.Listings)
+                                            .HasForeignKey(l => l.CourseInternalId);
+
+            modelBuilder.Entity<DbListing>().HasOne(l => l.Subject)
+                                            .WithMany(c => c.Listings)
+                                            .HasForeignKey(l => l.SubjectName);
+
+            modelBuilder.Entity<DbCourse>().HasMany(c => c.Attributes)
+                                           .WithMany(a => a.Courses);
         }
     }
 }

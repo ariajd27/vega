@@ -2,7 +2,9 @@
 @attribute [StreamRendering]
 @using System.ComponentModel.DataAnnotations
 @using System.ComponentModel
+@using Vega.Models
 @rendermode InteractiveServer
+@inject VegaService VegaService
 
 <PageTitle>Search Catalog</PageTitle>
 
@@ -23,14 +25,14 @@
                 <label>
                     Subject:
                     <InputSelect @bind-Value="NewQuery!.Subject">
-                        <option value="">
-                            select...
+                        <option value="@null">
+                            All subjects
                         </option>
                         @if (subjects != null)
                         {
                             @foreach (var subject in subjects)
                             {
-                                <option checked="@(NewQuery!.Subject == subject.Name)" value="@subject.Name">
+                                <option checked="@(NewQuery!.Subject == subject)" value="@subject">
                                     @subject.Name @subject.Description
                                 </option>
                             }
@@ -159,13 +161,13 @@
     {
         <p><em>Loading...</em></p>
     }
-    else if (courses.Length > 0)
+    else if (courses.Any())
     {
         @foreach (var course in courses)
         {
             <CollapsibleHeader>
                 <HeaderContent>
-                    @course.FormattedCatalogNumber() @course.Title
+                    @(course.AllCatalogNumbers()): @course.Title
                 </HeaderContent>
                 <ChildContent>
                     <p>@course.Description</p>
@@ -183,7 +185,7 @@
                             @foreach (var attr in course.Attributes)
                             {
                                 <li>
-                                    @attr
+                                    @attr.ToString()
                                 </li>
                             }
                         </ul>
@@ -202,10 +204,10 @@
     [SupplyParameterFromForm]
     private CatalogQuery? NewQuery { get; set; }
 
-    private Subject[]? subjects;
+    private IEnumerable<DbSubject>? subjects;
 
     private bool searched;
-    private Course[]? courses;
+    private IEnumerable<DbCourse>? courses;
     private CatalogQuery? FormQuery { get; set; }
 
     protected override void OnInitialized()
@@ -218,14 +220,10 @@
     {
         if (firstRender)
         {
-            await LoadSubjectsAsync();
+            var subjectsList = await VegaService.GetSubjectsAsync();
+            subjects = subjectsList.ToArray();
             StateHasChanged();
         }
-    }
-
-    private async Task LoadSubjectsAsync()
-    {
-        subjects = await Subject.GetAllSubjectsAsync();
     }
 
     private async Task Submit()
@@ -241,9 +239,9 @@
 
     private async Task Search()
     {
-        Course[] unfilteredCourses = await Course.GetAllCoursesAsync(FormQuery.Subject);
-        courses = unfilteredCourses.Where(x => FormQuery.InternalId == null || x.InternalId == FormQuery.InternalId)
-                                   .Where(x => FormQuery.Campus == "ANY" || x.Campus == FormQuery.Campus)
+        var unfilteredCourses = await VegaService.GetCoursesAsync(subject: FormQuery?.Subject);
+        courses = unfilteredCourses.Where(x => FormQuery?.InternalId == null || x.InternalId == FormQuery.InternalId)
+                                   .Where(x => FormQuery?.Campus is null or "ANY" || x.Campus == FormQuery.Campus)
                                    .Where(x =>
                                    {
                                        if (FormQuery.CatalogNumberMode == ExactRangeToggle.exact)
@@ -267,8 +265,29 @@
                                        }
                                    })
                                    .Where(x => (x.TypicalTerms & FormQuery.Terms) > 0)
-                                   .Where(x => FormQuery.MinCredits == null || x.MaxNumCredits >= FormQuery.MinCredits)
-                                   .Where(x => FormQuery.MaxCredits == null || x.MinNumCredits <= FormQuery.MaxCredits)
+                                   .Where(x =>
+                                   {
+                                       if (FormQuery.CreditCountMode == ExactRangeToggle.exact)
+                                       {
+                                           if (FormQuery.NumCredits == null) return true;
+                                           else if (x.MinNumCredits > FormQuery.NumCredits) return false;
+                                           else return x.MaxNumCredits >= FormQuery.NumCredits;
+                                       }
+                                       else
+                                       {
+                                           if (FormQuery.MinCredits != null)
+                                           {
+                                               if (x.MaxNumCredits < FormQuery.MinCredits) return false;
+                                           }
+
+                                           if (FormQuery.MaxCredits != null)
+                                           {
+                                               if (x.MinNumCredits > FormQuery.MaxCredits) return false;
+                                           }
+
+                                           return true;
+                                       }
+                                   })
                                    .Where(x =>
                                    {
                                        if (FormQuery.Keywords is null or "") return true;
@@ -299,8 +318,7 @@
 
     public class CatalogQuery() : IValidatableObject
     {
-        [Required(ErrorMessage = "Subject must be specified.")]
-        public string? Subject { get; set; }
+        public DbSubject? Subject { get; set; }
 
         public ExactRangeToggle CatalogNumberMode { get; set; } = ExactRangeToggle.range;
         [Range(0, 9999, ErrorMessage = "Catalog number must be a positive integer at most four digits long.")]
@@ -334,7 +352,7 @@
                 yield return new ValidationResult($"Catalog number maximum cannot be less than catalog number minimum");
             if (MaxCredits < MinCredits) 
                 yield return new ValidationResult($"Credit maximum cannot be less than credit minimum.");
-            if (Terms == PittAPI.Terms.Unlisted) 
+            if (Terms == Terms.Unlisted) 
                 yield return new ValidationResult($"At least one term must be selected.");
         }
     }

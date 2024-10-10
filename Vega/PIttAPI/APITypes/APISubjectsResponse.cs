@@ -1,4 +1,4 @@
-﻿namespace PittAPI.APITypes
+﻿namespace Vega.PittAPI.APITypes
 {
     public class APISubjectsResponse(APISubject[] subjects) : IHttpArrayResponse<APISubject>
     {

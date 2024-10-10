@@ -1,4 +1,4 @@
-﻿namespace PittAPI.APITypes
+﻿namespace Vega.PittAPI.APITypes
 {
     public class APIOfferingDetails(int crse_offer_nbr, string subject, string catalog_nbr, string acad_career, string acad_group, string acad_org,
         string campus, string campus_cd, string req_group, string planner_message, APIOpenTerm[] open_terms, APIEnrollableTerm[] enrollable_terms)

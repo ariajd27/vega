@@ -1,4 +1,4 @@
-﻿namespace PittAPI.APITypes
+﻿namespace Vega.PittAPI.APITypes
 {
     public class APIAttribute(string crse_attribute, string crse_attribute_descr, string crse_attribute_value, string crse_attribute_value_descr)
     {

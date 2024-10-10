@@ -1,4 +1,6 @@
-﻿namespace PittAPI.APITypes
+﻿using Vega.PittAPI;
+
+namespace Vega.PittAPI.APITypes
 {
     public class APISubject(string subject, string descr)
     {

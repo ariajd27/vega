@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace PittAPI
+namespace Vega.PittAPI
 {
     public static class HttpRequester
     {
@@ -12,7 +12,14 @@ namespace PittAPI
             client.DefaultRequestHeaders.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue("vega", "alpha"));
 
             HttpResponseMessage response = await client.GetAsync(url);
-            response.EnsureSuccessStatusCode();
+            try
+            {
+                response.EnsureSuccessStatusCode();
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"MakeHttpRequestAsync could not EnsureSuccessStatusCode:\n{e.Message}\nUrl was\n{url}.");
+            }
 
             string responseBody = await response.Content.ReadAsStringAsync() ?? throw new Exception($"Server at {url} returned null, which cannot be deserialized.");
 
