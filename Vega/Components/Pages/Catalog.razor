@@ -263,68 +263,25 @@
 
     private async Task Search()
     {
-        var unfilteredCourses = await VegaService.GetCoursesAsync(attribute: attributes?.FirstOrDefault(x => x.BothShort == FormQuery.Attribute, null),
-                                                                  subject: subjects?.FirstOrDefault(x => x.Name == FormQuery?.Subject, null));
-        courses = unfilteredCourses.Where(c => FormQuery?.InternalId == null || c.PittId == FormQuery.InternalId)
-                                   .Where(c => FormQuery?.Campus == "" || c.Campus == FormQuery.Campus)
-                                   .Where(c =>
+        int? minCatalogNumber = FormQuery?.CatalogNumberMode == ExactRangeToggle.exact ? FormQuery?.CatalogNumber : FormQuery?.CatalogNumberMin;
+        int? maxCatalogNumber = FormQuery?.CatalogNumberMode == ExactRangeToggle.exact ? FormQuery?.CatalogNumber : FormQuery?.CatalogNumberMax;
+
+        decimal? minNumCredits = FormQuery?.CreditCountMode == ExactRangeToggle.exact ? FormQuery?.NumCredits : FormQuery?.MinCredits;
+        decimal? maxNumCredits = FormQuery?.CreditCountMode == ExactRangeToggle.exact ? FormQuery?.NumCredits : FormQuery?.MaxCredits;
+
+        var unfilteredCourses = await VegaService.GetCoursesAsync(attributeKey: FormQuery?.Attribute, subjectKey: FormQuery?.Subject, 
+            courseId: FormQuery?.InternalId, minCatalogNumber: minCatalogNumber, maxCatalogNumber: maxCatalogNumber, terms: FormQuery?.Terms,
+            minNumCredits: minNumCredits, maxNumCredits: maxNumCredits, campus: FormQuery?.Campus);
+
+        courses = unfilteredCourses.Where(c =>
                                    {
-                                       if (FormQuery.CatalogNumberMode == ExactRangeToggle.exact)
-                                       {
-                                           if (FormQuery.CatalogNumber == null) return true;
-                                           else return c.Listings.Any(x => x.CatalogNumber == FormQuery.CatalogNumber);
-                                       }
-                                       else
-                                       {
-                                           return c.Listings.Any(l =>
-                                           {
-                                               if (FormQuery.CatalogNumberMin != null)
-                                               {
-                                                   if (l.CatalogNumber < FormQuery.CatalogNumberMin) return false;
-                                               }
-
-                                               if (FormQuery.CatalogNumberMax != null)
-                                               {
-                                                   if (l.CatalogNumber > FormQuery.CatalogNumberMax) return false;
-                                               }
-
-                                               return true;
-                                           });
-                                       }
-                                   })
-                                   .Where(c => (c.TypicalTerms & FormQuery.Terms) > 0)
-                                   .Where(c =>
-                                   {
-                                       if (FormQuery.CreditCountMode == ExactRangeToggle.exact)
-                                       {
-                                           if (FormQuery.NumCredits == null) return true;
-                                           else if (c.MinNumCredits > FormQuery.NumCredits) return false;
-                                           else return c.MaxNumCredits >= FormQuery.NumCredits;
-                                       }
-                                       else
-                                       {
-                                           if (FormQuery.MinCredits != null)
-                                           {
-                                               if (c.MaxNumCredits < FormQuery.MinCredits) return false;
-                                           }
-
-                                           if (FormQuery.MaxCredits != null)
-                                           {
-                                               if (c.MinNumCredits > FormQuery.MaxCredits) return false;
-                                           }
-
-                                           return true;
-                                       }
-                                   })
-                                   .Where(c =>
-                                   {
-                                       if (FormQuery.Keywords == "") return true;
+                                       if ((FormQuery?.Keywords ?? "") == "") return true;
 
                                        (string keyword, bool satisfied)[] keywords;
 
                                        try
                                        {
-                                           var splitKeywords = FormQuery.Keywords.Split(',').Where(x => x.Length > 0);
+                                           var splitKeywords = FormQuery?.Keywords.Split(',').Where(x => x.Length > 0) ?? [];
                                            keywords = splitKeywords.Select(x => (x.Trim())).Select(x => (x.ToLower(), false)).ToArray();
                                        }
                                        catch
@@ -335,7 +292,7 @@
                                        for (int i = 0; i < keywords.Length; i++)
                                        {
                                            if (c.Title.ToLower().Contains(keywords[i].keyword)) keywords[i].satisfied = true;
-                                           if (c.Description.ToLower().Contains(keywords[i].keyword)) keywords[i].satisfied = true;
+                                           if (c.Description?.ToLower().Contains(keywords[i].keyword) ?? false) keywords[i].satisfied = true;
                                        }
 
                                        if (FormQuery.KeywordMode == KeywordMode.any) return keywords.Any(x => x.satisfied);
