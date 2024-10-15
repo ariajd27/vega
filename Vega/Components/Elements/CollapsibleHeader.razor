@@ -13,7 +13,12 @@
     [Parameter]
     required public RenderFragment ChildContent { get; set; }
 
-    private bool isExpanded = false;
+    private bool isExpanded;
+
+    protected override void OnInitialized()
+    {
+        isExpanded = false;
+    }
 
     private void Toggle()
     {

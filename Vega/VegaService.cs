@@ -7,14 +7,9 @@ using Attribute = Vega.PittAPI.Attribute;
 
 namespace Vega
 {
-    public class VegaService
+    public class VegaService(VegaContext context)
     {
-        private readonly VegaContext context;
-
-        public VegaService(VegaContext context)
-        {
-            this.context = context;
-        }
+        private readonly VegaContext context = context;
 
         public async Task<List<DbSubject>> GetSubjectsAsync()
         {

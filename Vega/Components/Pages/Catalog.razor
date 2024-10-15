@@ -14,8 +14,8 @@
 
     <p>
         This page provides more advanced search options for Pitt's catalog than those available at either first-party location. 
-        Note however that due to current technical limitations -- which will be resolved in the future -- a subject must be 
-        provided to narrow down the search.
+        Please consider filtering by <emph>something</emph>; if you don't, it will just print every single course listing at
+        the university, which will take forever.
     </p>
 
     <EditForm Model="NewQuery" OnValidSubmit="Submit" FormName="CatalogSearchForm">
@@ -253,9 +253,12 @@
 
     private async Task Submit()
     {
+        await Task.Run(async () =>
+        {
         searched = true;
         courses = null;
-        StateHasChanged();
+            await InvokeAsync(() => StateHasChanged());
+        });
 
         FormQuery = NewQuery;
         await Search();

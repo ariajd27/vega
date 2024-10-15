@@ -24,6 +24,12 @@ namespace Vega.Models
             else return Listings.Select(x => x.FormattedCatalogNumber()).Aggregate((x, y) => $"{x}, {y}");
         }
         public string FormattedCampus() => Campus == null ? "unlisted" : Course.campusNames[Campus];
-        public string FormattedNumCredits() => MinNumCredits < MaxNumCredits ? $"{MinNumCredits} - {MaxNumCredits}" : MinNumCredits.ToString();
+        public string FormattedNumCredits()
+        {
+            decimal min = MinNumCredits / 2;
+            decimal max = MaxNumCredits / 2;
+
+            return min < max ? $"{min:F1} - {max:F1}" : min.ToString("F1");
+        }
     }
 }
