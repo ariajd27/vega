@@ -13,7 +13,7 @@
     <h1>Search Catalog</h1>
 
     <p>
-        This page provides more advanced search options for Pitt's catalog than those available at either first-party location. 
+        This page provides more advanced search options for Pitt's catalog than those available at either first-party location.
         Please consider filtering by <emph>something</emph>; if you don't, it will just print every single course listing at
         the university, which will take forever.
     </p>
@@ -166,6 +166,12 @@
                 </label>
             </li>
             <li>
+                <label>
+                    <InputCheckbox @bind-Value="NewQuery!.NoRanges" />
+                    Exclude courses with a range of possible credit counts (mostly labs, research projects, internships, study abroad programs, etc.)
+                </label>
+            </li>
+            <li>
                 <button type="submit">Search</button>
             </li>
         </ul>
@@ -255,8 +261,8 @@
     {
         await Task.Run(async () =>
         {
-        searched = true;
-        courses = null;
+            searched = true;
+            courses = null;
             await InvokeAsync(() => StateHasChanged());
         });
 
@@ -301,6 +307,7 @@
 
                                        return FormQuery?.KeywordMode == KeywordMode.any ? keywords.Any(x => x.satisfied) : keywords.All(x => x.satisfied);
                                    })
+                                   .Where(c => !FormQuery!.NoRanges || c.MinNumCredits == c.MaxNumCredits)
                                    .ToList();
     }
 
@@ -336,6 +343,8 @@
         public string Keywords { get; set; } = "";
         public KeywordMode KeywordMode { get; set; } = KeywordMode.any;
 
+        public bool NoRanges { get; set; } = true;
+
         public IEnumerable<ValidationResult> Validate(ValidationContext context)
         {
             if (CatalogNumberMax < CatalogNumberMin)
@@ -349,6 +358,7 @@
 
     void ToggleTerm(Terms term)
     {
+        if (NewQuery == null) return;
         NewQuery.Terms ^= term;
     }
 
