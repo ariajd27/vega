@@ -3,7 +3,7 @@
 	color: #999;
 
 	font-family: "Fira Mono", monospace;
-	font-size: 16px;
+	font-size: 14px;
 	line-height: 1.5rem;
 }
 
@@ -26,6 +26,19 @@
 	height: min-content;
 }
 
+@media (max-width: 768px) {
+	.page_sidebar {
+		display: none;
+	}
+
+	.page {
+		grid-template-areas:
+			"head head"
+			"main main"
+			"foot foot";
+	}
+}
+
 .page_sidebar {
 	grid-area: side;
 	position: sticky;
@@ -46,17 +59,15 @@
 	color: #AAA;
 }
 
-.page_body_field:first-child {
-	margin-bottom: 1rem;
+.page_body_spacer {
+	margin: 1rem;
 }
 
-.page_body_field:not(:first-child) p {
+.page_body_result p {
 	line-height: 1.2rem;
-	margin-bottom: 0.5rem;
-	margin-top: 0.5rem;
 }
 
-.page_body_field:not(:first-child) h2:first-child {
+.page_body_field h2:first-child {
 	margin: 0;
 }
 
@@ -179,7 +190,7 @@ emph, .validation-errors {
 }
 
 .form select, .form button, .form input {
-	font-size: 14px;
+	font-size: 12px;
 	font-family: "Fira Mono", monospace;
 
 	border: 1px solid #AAA;
@@ -203,4 +214,12 @@ emph, .validation-errors {
 
 .form .credit_count input, .form .catalog_number input {
 	width: 5rem;
+}
+
+.disclaimer {
+	font-size: 12px;
+}
+
+.disclaimer p {
+	margin: 0;
 }
