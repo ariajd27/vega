@@ -11,11 +11,16 @@ namespace Vega
     {
         private readonly VegaContext context = context;
 
-        public async Task<List<DbSubject>> GetSubjectsAsync()
+        public async Task<List<DbSubject>> GetSubjectsAsync(string? campus = null)
         {
-            if (!context.Subjects.Any()) await BuildDatabase();
-
+            if (campus == null)
+            {
             return await context.Subjects.ToListAsync();
+        }
+            else
+            {
+                return await context.Subjects.Where(s => s.Listings.Any(l => l.Course.Campus == campus)).ToListAsync();
+            }
         }
 
         public async Task<List<DbCourse>> GetCoursesAsync(string? attributeKey = null, string? subjectKey = null,

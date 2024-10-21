@@ -23,6 +23,22 @@
         <ul class="form">
             <li>
                 <label>
+                    Campus:
+                    <select @onchange="SetCampusAsync">
+                        <option checked="@(NewQuery!.Campus == "")" value="">
+                            Any
+                        </option>
+                        @foreach (var campus in Course.campusNames)
+                        {
+                            <option checked="@(NewQuery!.Campus == campus.Key)" value="@campus.Key">
+                                @campus.Value
+                            </option>
+                        }
+                    </select>
+                </label>
+            </li>
+            <li>
+                <label>
                     Subject:
                     <InputSelect @bind-Value="NewQuery!.Subject">
                         <option checked="@(NewQuery!.Subject == "")" value="">
@@ -69,22 +85,6 @@
                 <label>
                     Internal ID:
                     <InputNumber @bind-Value="NewQuery!.InternalId" />
-                </label>
-            </li>
-            <li>
-                <label>
-                    Campus:
-                    <InputSelect @bind-Value="NewQuery!.Campus">
-                        <option checked="@(NewQuery!.Campus == "")" value="">
-                            Any
-                        </option>
-                        @foreach (var campus in Course.campusNames)
-                        {
-                            <option checked="@(NewQuery!.Campus == campus.Key)" value="@campus.Key">
-                                @campus.Value
-                            </option>
-                        }
-                    </InputSelect>
                 </label>
             </li>
             <li>
@@ -243,15 +243,35 @@
         NewQuery ??= new();
     }
 
+    private async Task GetSubjectsAsync()
+    {
+            var subjectsList = await VegaService.GetSubjectsAsync();
+            subjects = subjectsList.ToArray();
+    }
+
+    private async Task GetAttributesAsync()
+    {
+            var attributesList = await VegaService.GetAttributesAsync();
+            attributes = attributesList.ToArray();
+    }
+
+    private async Task SetCampusAsync(ChangeEventArgs e)
+    {
+        var campus = e.Value as string;
+        NewQuery!.Campus = campus ?? "";
+        if (string.IsNullOrEmpty(campus)) return;
+
+        var subjectsList = await VegaService.GetSubjectsAsync(campus: campus);
+        subjects = subjectsList.ToArray();
+        StateHasChanged();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            var subjectsList = await VegaService.GetSubjectsAsync();
-            subjects = subjectsList.ToArray();
-
-            var attributesList = await VegaService.GetAttributesAsync();
-            attributes = attributesList.ToArray();
+            await GetSubjectsAsync();
+            await GetAttributesAsync();
 
             StateHasChanged();
         }
