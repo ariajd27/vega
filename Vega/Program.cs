@@ -1,5 +1,6 @@
 using Vega.Components;
 using Microsoft.EntityFrameworkCore;
+using Blazored.LocalStorage;
 
 namespace Vega
 {

@@ -3,8 +3,10 @@
 @using System.ComponentModel.DataAnnotations
 @using System.ComponentModel
 @using Vega.Models
+@using Vega.Parsing
 @rendermode InteractiveServer
 @inject VegaService VegaService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Search Catalog</PageTitle>
 
@@ -188,37 +190,40 @@
     }
     else if (courses.Any())
     {
-        @foreach (var course in courses)
-        {
-            <CollapsibleHeader>
-                <HeaderContent>
-                    @(course.AllCatalogNumbers()): @course.Title
-                </HeaderContent>
-                <ChildContent>
-                    <p>@course.Description</p>
-                    @if (FormQuery?.Campus == "")
-                    {
-                        <p>campus: @course.FormattedCampus()</p>
-                    }
-                    <p>typically offered: @course.TypicalTerms</p>
-                    <p>credits: @course.FormattedNumCredits()</p>
-                    <p>requirements: @course.Requirements</p>
-                    @if (course.Attributes.Any())
-                    {
-                        <p>attributes:</p>
-                        <ul class="list">
-                            @foreach (var attr in course.Attributes)
-                            {
-                                <li>
-                                    @attr.ToString()
-                                </li>
-                            }
-                        </ul>
-                    }
-                    <p>internal id: @course.PittId</p>
-                </ChildContent>
-            </CollapsibleHeader>
-        }
+        <div class="page_body_spacer" />
+        <div class="page_body_result">
+            @foreach (var course in courses)
+            {
+                <CollapsibleHeader>
+                    <HeaderContent>
+                        @(course.AllCatalogNumbers()): @course.Title
+                    </HeaderContent>
+                    <ChildContent>
+                        <p>@course.Description</p>
+                        @if (FormQuery?.Campus == "")
+                        {
+                            <p>campus: @course.FormattedCampus()</p>
+                        }
+                        <p>typically offered: @course.TypicalTerms</p>
+                        <p>credits: @course.FormattedNumCredits()</p>
+                        <p>requirements: @course.Requirements</p>
+                        @if (course.Attributes.Any())
+                        {
+                            <p>attributes:</p>
+                            <ul class="list">
+                                @foreach (var attr in course.Attributes)
+                                {
+                                    <li>
+                                        @attr.ToString()
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        <p>internal id: @course.PittId</p>
+                    </ChildContent>
+                </CollapsibleHeader>
+            }
+        </div>
     }
     else
     {
@@ -243,29 +248,6 @@
         NewQuery ??= new();
     }
 
-    private async Task GetSubjectsAsync()
-    {
-            var subjectsList = await VegaService.GetSubjectsAsync();
-            subjects = subjectsList.ToArray();
-    }
-
-    private async Task GetAttributesAsync()
-    {
-            var attributesList = await VegaService.GetAttributesAsync();
-            attributes = attributesList.ToArray();
-    }
-
-    private async Task SetCampusAsync(ChangeEventArgs e)
-    {
-        var campus = e.Value as string;
-        NewQuery!.Campus = campus ?? "";
-        if (string.IsNullOrEmpty(campus)) return;
-
-        var subjectsList = await VegaService.GetSubjectsAsync(campus: campus);
-        subjects = subjectsList.ToArray();
-        StateHasChanged();
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -276,6 +258,31 @@
             StateHasChanged();
         }
     }
+
+    private async Task GetSubjectsAsync()
+    {
+        var campus = await JSRuntime.InvokeAsync<string>("cookies.get", Planner.campusCookieKey);
+        await SetCampusAsync(new() { Value = campus });
+    }
+
+    private async Task GetAttributesAsync()
+    {
+        var attributesList = await VegaService.GetAttributesAsync();
+        attributes = attributesList.ToArray();
+    }
+
+    private async Task SetCampusAsync(ChangeEventArgs e)
+    {
+        var campus = e.Value as string;
+        NewQuery!.Campus = campus ?? "";
+
+        var subjectsList = await VegaService.GetSubjectsAsync(campus: campus);
+        subjects = subjectsList.ToArray();
+        StateHasChanged();
+
+        await JSRuntime.InvokeVoidAsync("cookies.set", Planner.campusCookieKey, campus);
+    }
+
 
     private async Task Submit()
     {

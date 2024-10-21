@@ -1,6 +1,6 @@
 ﻿<div class="page_body_field">
     <h2 class="collapsible_header" @onclick="Toggle">@HeaderContent</h2>
-    @if (isExpanded)
+    @if (IsExpanded)
     {
         @ChildContent
     }
@@ -13,16 +13,12 @@
     [Parameter]
     required public RenderFragment ChildContent { get; set; }
 
-    private bool isExpanded;
-
-    protected override void OnInitialized()
-    {
-        isExpanded = false;
-    }
+    [Parameter]
+    public bool IsExpanded { get; set; } = false;
 
     private void Toggle()
     {
-        isExpanded = !isExpanded;
+        IsExpanded = !IsExpanded;
         StateHasChanged();
     }
 }

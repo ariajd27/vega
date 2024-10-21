@@ -1,0 +1,56 @@
+﻿@inject VegaService VegaService
+
+<select @onchange="OnSubjectChanged" value="@Value.Subject">
+    <option value="">select...</option>
+    @foreach (var subject in Subjects)
+    {
+        <option value="@subject">@subject</option>
+    }
+</select>
+<span class="catalog_number">
+    <input @onchange="OnNumberChanged" type="number" value="@Value.Number.ToString("D4")" />
+</span>
+@_title
+
+@code {
+    [Parameter] required public IEnumerable<string> Subjects { get; set; }
+    [Parameter] public TinyListing Value { get; set; }
+    [Parameter] public EventCallback<TinyListing> ValueChanged { get; set; }
+
+    private string _title = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await UpdateTitleAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnSubjectChanged(ChangeEventArgs e)
+    {
+        Value.Subject = e.Value as string;
+        await ValueChanged.InvokeAsync(Value);
+        await UpdateTitleAsync();
+    }
+
+    private async Task OnNumberChanged(ChangeEventArgs e)
+    {
+        Value.Number = int.Parse(e.Value as string ?? "0");
+        await ValueChanged.InvokeAsync(Value);
+        await UpdateTitleAsync();
+    }
+
+    public async Task UpdateTitleAsync()
+    {
+        var course = await VegaService.GetCourseByListingAsync(Value.Subject, Value.Number);
+        _title = course?.Title ?? "";
+    }
+
+    public class TinyListing(string subject, int number)
+    {
+        public string Subject { get; set; } = subject;
+        public int Number { get; set; } = number;
+    }
+}

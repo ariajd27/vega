@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using NuGet.Common;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Vega.PittAPI;
 
@@ -31,5 +32,11 @@ namespace Vega.Models
 
             return min < max ? $"{min:F1} - {max:F1}" : min.ToString("F1");
         }
+
+        //public string FormattedRequirements(string[] subjects)
+        //{
+        //    var requirements = Tokenizer.Parse(Requirements ?? "", subjects).Select(x => $"[{x}]").Aggregate("", (x, y) => $"{x} {y}");
+        //    return requirements.Length == 0 ? "none" : requirements;
+        //}
     }
 }

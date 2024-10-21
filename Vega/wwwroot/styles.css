@@ -53,10 +53,14 @@
 
 .page_body_field {
 	margin: 0.5rem;
-	padding: 1rem;
+	padding: 1.5rem;
 
 	background-color: #121212;
 	color: #AAA;
+}
+
+.page_body_field :last-child {
+	margin-bottom: 0;
 }
 
 .page_body_spacer {
@@ -183,6 +187,7 @@ ul.header_nav {
 
 ul.form, .validation-errors {
 	list-style: none;
+	padding-left: 0;
 }
 
 emph, .validation-errors {

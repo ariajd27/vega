@@ -1,0 +1,25 @@
+﻿@Tree.GetLabel()
+@if (Tree.HasChildren())
+{
+    <ul class="list">
+        @foreach (IRecursivelyListable child in Tree.GetChildren())
+        {
+            <li>
+                <RecursiveList Tree="child" />
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter]
+    required public IRecursivelyListable Tree { get; set; }
+
+    public interface IRecursivelyListable
+    {
+        public string GetLabel();
+
+        public bool HasChildren();
+        public IEnumerable<IRecursivelyListable> GetChildren();
+    }
+}

@@ -1,9 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Collections.Immutable;
 using Vega.Models;
 using Vega.PittAPI;
-using Attribute = Vega.PittAPI.Attribute;
 
 namespace Vega
 {
@@ -13,10 +11,10 @@ namespace Vega
 
         public async Task<List<DbSubject>> GetSubjectsAsync(string? campus = null)
         {
-            if (campus == null)
+            if (string.IsNullOrEmpty(campus))
             {
-            return await context.Subjects.ToListAsync();
-        }
+                return await context.Subjects.ToListAsync();
+            }
             else
             {
                 return await context.Subjects.Where(s => s.Listings.Any(l => l.Course.Campus == campus)).ToListAsync();
@@ -24,8 +22,8 @@ namespace Vega
         }
 
         public async Task<List<DbCourse>> GetCoursesAsync(string? attributeKey = null, string? subjectKey = null,
-            int? courseId = null, int? minCatalogNumber = null, int? maxCatalogNumber = null, Terms? terms = Terms.Year,
-            decimal? minNumCredits = null, decimal? maxNumCredits = null, string? campus = null)
+            int? courseId = null, int? minCatalogNumber = null, int? maxCatalogNumber = null, int? catalogNumber = null,
+            Terms? terms = Terms.Year, decimal? minNumCredits = null, decimal? maxNumCredits = null, string? campus = null)
         {
             List<DbCourse> courses;
 
@@ -34,56 +32,67 @@ namespace Vega
             bool filteredByAttribute = false;
             bool filteredByCampus = false;
 
-            // have we been given the course id?
-            if (courseId != null) courses = context.Courses.Where(c => c.PittId == courseId).ToList();
-
-            // have we been given a specific subject and catalog number?
-            else if (minCatalogNumber != null && maxCatalogNumber != null && !subjectKey.IsNullOrEmpty() && minCatalogNumber == maxCatalogNumber)
+            // have we been given a specific catalog number?
+            if (minCatalogNumber != null && maxCatalogNumber != null && catalogNumber == null && minCatalogNumber == maxCatalogNumber)
             {
-                filteredBySubject = true;
-                filteredByCatalogNumber = true;
-                courses = context.Courses.Where(c => c.Listings.Any(l => l.SubjectName == subjectKey && l.CatalogNumber == minCatalogNumber)).ToList();
+                catalogNumber = minCatalogNumber;
             }
 
-            // can we cut down by grabbing courses by attribute?
+            // have we been given the course id?
+            if (courseId != null)
+            {
+                courses = context.Courses.Where(c => c.PittId == courseId).ToList();
+            }
             else
             {
-                // either way, this is as much filtering by attribute as we can do
-                filteredByAttribute = true;
-
-                if (!attributeKey.IsNullOrEmpty())
+                // have we been given a specific subject and catalog number?
+                if (!subjectKey.IsNullOrEmpty() && catalogNumber != null)
                 {
-                    courses = context.Attributes.Find(attributeKey)?.Courses.ToList() ?? [];
+                    filteredBySubject = true;
+                    filteredByCatalogNumber = true;
+                    courses = context.Courses.Where(c => c.Listings.Any(l => l.SubjectName == subjectKey && l.CatalogNumber == catalogNumber)).ToList();
                 }
 
-                // can we grab courses by subject?
+                // can we cut down by grabbing courses by attribute?
                 else
                 {
-                    // either way, this is as much filtering by subject as we can do
-                    filteredBySubject = true;
+                    // either way, this is as much filtering by attribute as we can do
+                    filteredByAttribute = true;
 
-                    // yes, which is good, it saves ram
-                    if (!subjectKey.IsNullOrEmpty())
+                    if (!attributeKey.IsNullOrEmpty())
                     {
-                        courses = context.Subjects.Find(subjectKey)?.Listings.Select(x => x.Course).ToList() ?? [];
+                        courses = context.Attributes.Find(attributeKey)?.Courses.ToList() ?? [];
                     }
 
-                    // fine... can we at least filter by campus
+                    // can we grab courses by subject?
                     else
                     {
-                        // as usual
-                        filteredByCampus = true;
+                        // either way, this is as much filtering by subject as we can do
+                        filteredBySubject = true;
 
-                        // this is already awful
-                        if (!campus.IsNullOrEmpty())
+                        // yes, which is good, it saves ram
+                        if (!subjectKey.IsNullOrEmpty())
                         {
-                            courses = context.Courses.Where(c => c.Campus == campus).ToList();
+                            courses = context.Subjects.Find(subjectKey)?.Listings.Select(x => x.Course).ToList() ?? [];
                         }
 
-                        // this is going to be so so slow and ram-intensive
+                        // fine... can we at least filter by campus?
                         else
                         {
-                            courses = await context.Courses.ToListAsync();
+                            // as usual
+                            filteredByCampus = true;
+
+                            // this is already awful
+                            if (!campus.IsNullOrEmpty())
+                            {
+                                courses = context.Courses.Where(c => c.Campus == campus).ToList();
+                            }
+
+                            // this is going to be so so slow and ram-intensive
+                            else
+                            {
+                                courses = await context.Courses.ToListAsync();
+                            }
                         }
                     }
                 }
@@ -129,6 +138,13 @@ namespace Vega
             }
 
             return courses;
+        }
+
+        public async Task<DbCourse?> GetCourseByListingAsync(string subject, int number)
+        {
+            if (subject.IsNullOrEmpty()) return null;
+            var courses = await GetCoursesAsync(subjectKey: subject, catalogNumber: number);
+            return courses.FirstOrDefault(c => true, null);
         }
 
         public async Task<List<DbAttribute>> GetAttributesAsync()

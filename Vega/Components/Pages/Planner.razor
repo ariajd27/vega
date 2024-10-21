@@ -1,5 +1,10 @@
 ﻿@page "/planner"
 @attribute [StreamRendering]
+@rendermode InteractiveServer
+@using System.Text.Json
+@using System.ComponentModel.DataAnnotations
+@inject VegaService VegaService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Planner</PageTitle>
 
@@ -11,6 +16,143 @@
 
 </div>
 
-@code {
+<CookieDisclaimer />
 
+<CollapsibleHeader IsExpanded="true">
+
+    <HeaderContent>
+        Previous Credits
+    </HeaderContent>
+
+    <ChildContent>
+
+        <p>
+            Enter any previous courses you have Pitt credit for here.
+        </p>
+
+        <EditForm Model="Background" OnSubmit="Submit" FormName="CatalogSearchForm">
+
+             <DataAnnotationsValidator />
+             <ul class="form">
+                <li>
+                    <label>
+                        Courses: <button type="button" @onclick="AppendInputListing">Add 1</button>
+                        or <button type="button" @onclick="AppendInputListings">Add</button>
+                        <InputNumber @bind-Value="Background.InputListingAddCount" />
+                        @if (subjects != null)
+                        {
+                            <ul class="list">
+                                @for (int i = 0; i < Background.Listings.Count; i++)
+                                {
+                                    int index = i;
+                                    <li>
+                                        <ListingInput Subjects="subjects" @bind-Value="Background.Listings[index]" />
+                                        <button type="button" @onclick="() => RemoveInputListing(Background.Listings[index])">Remove</button>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <emph>loading...</emph>
+                        }
+                    </label>
+                </li>
+                <li>
+                    <button type="submit">Submit</button>
+                </li>
+            </ul>
+            <ValidationSummary />
+
+        </EditForm>
+
+    </ChildContent>
+
+</CollapsibleHeader>
+
+@code {
+    [SupplyParameterFromForm]
+    private BackgroundType Background { get; set; } = new();
+
+    private string[]? subjects;
+    private int[]? courses;
+
+    public static readonly string backgroundListingsCookieKey = "backgroundListings";
+    public static readonly string backgroundCoursesCookieKey = "backgroundCourses";
+    public static readonly string campusCookieKey = "campus";
+
+    protected override void OnInitialized()
+    {
+        Background = new();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var dbSubjects = await VegaService.GetSubjectsAsync();
+            subjects = dbSubjects.Select(s => s.Name).ToArray();
+            StateHasChanged();
+
+            if (courses == null) await LoadCookiesAsync();
+        }
+    }
+
+    private async Task LoadCookiesAsync()
+    {
+        var cookieResponse = await JSRuntime.InvokeAsync<string>("cookies.get", backgroundListingsCookieKey);
+        if (!string.IsNullOrEmpty(cookieResponse))
+        {
+            var cookieListings = JsonSerializer.Deserialize<ListingInput.TinyListing[]>(cookieResponse);
+            if (cookieListings != null) Background.Listings.AddRange(cookieListings);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task SetCookiesAsync()
+    {
+        var dbCourses = await Task.WhenAll(Background.Listings.Select(async l => await VegaService.GetCourseByListingAsync(l.Subject, l.Number)));
+        courses = dbCourses.Where(c => c != null).Select(c => c!.Id).ToArray();
+
+        await JSRuntime.InvokeVoidAsync("cookies.set", backgroundListingsCookieKey, JsonSerializer.Serialize(Background.Listings));
+        await JSRuntime.InvokeVoidAsync("cookies.set", backgroundCoursesCookieKey, JsonSerializer.Serialize(courses));
+    }
+
+    private async Task Submit()
+    {
+        await SetCookiesAsync();
+    }
+
+    private class BackgroundType()
+    {
+        public List<ListingInput.TinyListing> Listings { get; set; } = [];
+
+        [Range(1, 99, ErrorMessage = "Number of courses to add must be positive.")]
+        public int InputListingAddCount { get; set; } = 5;
+    }
+
+    public void RemoveInputListing(int index)
+    {
+        Background.Listings.RemoveAt(index);
+        StateHasChanged();
+    }
+
+    public void RemoveInputListing(ListingInput.TinyListing value)
+    {
+        Background.Listings.Remove(value);
+        StateHasChanged();
+    }
+
+    public void AppendInputListing()
+    {
+        Background.Listings.Add(new ListingInput.TinyListing("", 0));
+        StateHasChanged();
+    }
+
+    public void AppendInputListings()
+    {
+        if (Background.InputListingAddCount < 0) return;
+        Background.Listings.AddRange(Enumerable.Repeat(new ListingInput.TinyListing("", 0), Background.InputListingAddCount));
+    }
 }
