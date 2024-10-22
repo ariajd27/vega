@@ -228,3 +228,11 @@ emph, .validation-errors {
 .disclaimer p {
 	margin: 0;
 }
+
+.table {
+	width: 100%
+}
+
+.table thead {
+	font-weight: 600;
+}

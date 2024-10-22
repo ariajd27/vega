@@ -27,7 +27,8 @@
     <ChildContent>
 
         <p>
-            Enter any previous courses you have Pitt credit for here.
+            Enter any previous courses you have Pitt credit for here. 
+            Alternatively, save time by <a href="planner/import">importing your unofficial transcript from PeopleSoft</a>.
         </p>
 
         <EditForm Model="Background" OnSubmit="Submit" FormName="CatalogSearchForm">
@@ -35,28 +36,28 @@
              <DataAnnotationsValidator />
              <ul class="form">
                 <li>
-                    <label>
-                        Courses: <button type="button" @onclick="AppendInputListing">Add 1</button>
-                        or <button type="button" @onclick="AppendInputListings">Add</button>
+                    <span>Courses:</span>
+                    @if (subjects != null)
+                    {
+                        <button type="button" @onclick="AppendInputListing">Add 1</button>
+                        <span>or</span>
+                        <button type="button" @onclick="AppendInputListings">Add</button>
                         <InputNumber @bind-Value="Background.InputListingAddCount" />
-                        @if (subjects != null)
-                        {
-                            <ul class="list">
-                                @for (int i = 0; i < Background.Listings.Count; i++)
-                                {
-                                    int index = i;
-                                    <li>
-                                        <ListingInput Subjects="subjects" @bind-Value="Background.Listings[index]" />
-                                        <button type="button" @onclick="() => RemoveInputListing(Background.Listings[index])">Remove</button>
-                                    </li>
-                                }
-                            </ul>
-                        }
-                        else
-                        {
-                            <emph>loading...</emph>
-                        }
-                    </label>
+                        <ul class="list">
+                            @for (int i = 0; i < Background.Listings.Count; i++)
+                            {
+                                int index = i;
+                                <li>
+                                    <ListingInput Subjects="subjects" @bind-Value="Background.Listings[index]" />
+                                    <button type="button" @onclick="() => RemoveInputListing(Background.Listings[index])">Remove</button>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <emph>loading...</emph>
+                    }
                 </li>
                 <li>
                     <button type="submit">Submit</button>

@@ -1,0 +1,137 @@
+﻿@page "/planner/import"
+@using System.Xml.Linq
+@using HtmlAgilityPack
+@using System.Text.RegularExpressions
+@using System.Text.Json
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject VegaService VegaService
+@inject IJSRuntime JSRuntime
+
+<div class="page_body_field">
+
+    <h1>Import Transcript</h1>
+
+    <p>
+        This page allows you to import your unofficial transcript from PeopleSoft to Vega.
+        Unfortunately, this does require a small amount of fiddling, but it should be overall much faster than typing each course in.
+        Scroll down to follow along with the guide; alternatively, if you've done this before, <a href="planner/import/#import">jump to the file upload</a>.
+    </p>
+
+</div>
+
+<CookieDisclaimer />
+
+<div class="page_body_field">
+
+    <h2>Guide</h2>
+
+    <p>This section is incomplete.</p>
+
+</div>
+
+<div class="page_body_field">
+
+    <h2 id="import">Import</h2>
+
+    <div class="form">
+
+        <p>
+            <label>
+                Upload file:
+                <InputFile OnChange="HandleFileSubmission" />
+            </label>
+        </p>
+
+        @if (loading)
+        {
+            <p><emph>loading...</emph></p>
+        }
+        else if (uploaded)
+        {
+            <p>Data loaded:</p>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <td>Topic</td>
+                        <td>Listing</td>
+                        <td>Grade</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var course in courses!)
+                    {
+                        <tr>
+                            <td>@course.Topic</td>
+                            <td>@course.Listing</td>
+                            <td>@course.Grade</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <button @onclick="SetBackgroundData">Import Data</button>
+        }
+
+    </div>
+
+</div>
+
+@code {
+    private bool loading = false;
+    private bool uploaded = false;
+
+    private IEnumerable<Course>? courses;
+
+    private static readonly Regex listingRegex = new("[A-Z]+ [0-9]{4}", RegexOptions.Compiled);
+
+    private async Task HandleFileSubmission(InputFileChangeEventArgs e)
+    {
+        MemoryStream stream = new();
+        await e.File.OpenReadStream().CopyToAsync(stream);
+        stream.Position = 0;
+
+        if (stream != null)
+        {
+            loading = true;
+
+            StateHasChanged();
+
+            HtmlDocument document = new();
+            await Task.Run(() =>
+            {
+                document.Load(new StreamReader(stream));
+            });
+
+            var courseNodes = document.DocumentNode.Descendants().Where(n => !n.HasChildNodes).Where(n => listingRegex.IsMatch(n.InnerText));
+            var courseRows = courseNodes.Select(n => n.ParentNode.ParentNode.ParentNode.ParentNode).Distinct();
+            courses = courseRows.Select(n => new Course()
+            {
+                Topic = n.ChildNodes[0].InnerText,
+                Listing = n.ChildNodes[1].InnerText,
+                Grade = n.ChildNodes[4].InnerText
+            });
+
+            uploaded = true;
+            loading = false;
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task SetBackgroundData()
+    {
+        var listings = courses!.Select(c => c.Listing.Split(' ')).Select(l => new ListingInput.TinyListing(l[0], int.Parse(l[1])));
+        var dbCourses = await Task.WhenAll(listings.Select(async l => await VegaService.GetCourseByListingAsync(l.Subject, l.Number)));
+        var courseIds = dbCourses.Where(c => c != null).Select(c => c!.Id).ToArray();
+
+        await JSRuntime.InvokeVoidAsync("cookies.set", Planner.backgroundListingsCookieKey, JsonSerializer.Serialize(listings));
+        await JSRuntime.InvokeVoidAsync("cookies.set", Planner.backgroundCoursesCookieKey, JsonSerializer.Serialize(courseIds));
+    }
+
+    private class Course
+    {
+        public required string Topic { get; set; }
+        public required string Listing { get; set; }
+        public required string Grade { get; set; }
+    }
+}
