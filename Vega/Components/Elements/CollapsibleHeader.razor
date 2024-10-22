@@ -1,9 +1,12 @@
 ﻿<div class="page_body_field">
-    <h2 class="collapsible_header" @onclick="Toggle">@HeaderContent</h2>
+
+    <h2 class="collapsible_header @(IsExpanded ? "expanded" : "collapsed")" @onclick="Toggle">@HeaderContent</h2>
+
     @if (IsExpanded)
     {
         @ChildContent
     }
+
 </div>
 
 @code {

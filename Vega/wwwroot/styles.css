@@ -1,7 +1,6 @@
 ﻿body, html {
 	background-color: #000;
 	color: #999;
-
 	font-family: "Fira Mono", monospace;
 	font-size: 14px;
 	line-height: 1.5rem;
@@ -10,7 +9,6 @@
 .page {
 	max-width: 96rem;
 	margin: 1rem auto;
-
 	display: grid;
 	grid-template-areas:
 		"head head"
@@ -53,13 +51,13 @@
 
 .page_body_field {
 	margin: 0.5rem;
-	padding: 1.5rem;
+	padding: 1rem 1.5rem;
 
 	background-color: #121212;
 	color: #AAA;
 }
 
-.page_body_field :last-child {
+.page_body_field :last-child, .page_body_field p {
 	margin-bottom: 0;
 }
 
@@ -194,10 +192,9 @@ emph, .validation-errors {
 	font-style: italic;
 }
 
-.form select, .form button, .form input {
+.form select, .form button, .form input, .flags_input_button, .flags_input_dropdown {
 	font-size: 12px;
 	font-family: "Fira Mono", monospace;
-
 	border: 1px solid #AAA;
 	background-color: #111;
 	color: #999;
@@ -235,4 +232,53 @@ emph, .validation-errors {
 
 .table thead {
 	font-weight: 600;
+}
+
+.collapsible_header.collapsed {
+	font-style: italic;
+}
+
+.collapsible_header.collapsed::before, .collapsible_header.collapsed::after {
+	font-style: normal;
+}
+
+.collapsible_header.collapsed::after {
+	content: "...";
+	color: #333;
+}
+
+.flags_input {
+	display: inline flow-root list-item;
+	position: absolute;
+	z-index: 1;
+	margin-left: 0.5rem;
+}
+
+.flags_input_button, .flags_input_dropdown {
+	padding: 1px 4px;
+}
+
+.flags_input_button {
+	padding-inline-end: 4rem;
+}
+
+.flags_input_dropdown {
+	border-radius: 2px;
+	padding: 4px;
+	border-color: #777;
+}
+
+.flags_input_dropdown_element {
+	border-radius: 2px;
+	padding: 1px 4px 1px 1px;
+}
+
+.flags_input_dropdown_element:hover {
+	color: #fff;
+	background-color: #556;
+}
+
+.page_body_field img {
+	max-width: 100%;
+	max-height: 40rem;
 }

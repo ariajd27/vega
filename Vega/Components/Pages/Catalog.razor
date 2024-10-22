@@ -89,20 +89,8 @@
                 </label>
             </li>
             <li>
-                <label>
-                    Typical terms offered:
-                    <ul class="form">
-                        @foreach (var term in Enum.GetValues(typeof(Terms)).Cast<Terms>().Skip(1).SkipLast(1))
-                        {
-                            <li>
-                                <label>
-                                    <input type="checkbox" checked="@(NewQuery!.Terms.HasFlag(term))" @onclick="() => ToggleTerm(term)" />
-                                    @term
-                                </label>
-                            </li>
-                        }
-                    </ul>
-                </label>
+                Typical terms offered:
+                <FlagsInput @bind-Value="NewQuery!.Terms" options="skipfirst skiplast" />
             </li>
             <li>
                 <label>

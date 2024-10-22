@@ -3,6 +3,7 @@
 @using HtmlAgilityPack
 @using System.Text.RegularExpressions
 @using System.Text.Json
+@using System.Web
 @attribute [StreamRendering]
 @rendermode InteractiveServer
 @inject VegaService VegaService
@@ -26,7 +27,41 @@
 
     <h2>Guide</h2>
 
-    <p>This section is incomplete.</p>
+    <p>
+        Uploading your unofficial transcript data shouldn't take more than a few minutes.
+        Note that since you're not uploading your real transcript, but instead just part of a PeopleSoft page, your name will not be attached to it.
+        In other words, there is no way for Vega to connect your identity to your data.
+    </p>
+
+    <p>
+        Log into PeopleSoft/Highpoint CX and go to "View Unofficial Transcript" under "Academics" in the sidebar.
+    </p>
+
+    <img src="images/import_guide_1.png" />
+
+    <p>
+        Once you're on the correct page, click the button that says "Expand All".
+    </p>
+
+    <img src="images/import_guide_2.png" />
+
+    <p>
+        Then, right-click anywhere on the page and hit "Save Page As..." (the exact label may vary depending on your browser).
+        Save the file anywhere; your downloads folder will work just fine.
+    </p>
+
+    <img src="images/import_guide_3.png" />
+
+    <p>
+        On this page, hit the file upload button.
+        Instead of uploading "View Unofficial Transcript.htm", open the folder with the same name and upload "WEBLIB_HCX_RE.htm".
+    </p>
+
+    <img src="images/import_guide_4.png" />
+
+    <p>
+        Check over the extracted data. If it looks good, hit "Import Data" at the bottom of this page, and you're done!
+    </p>
 
 </div>
 
@@ -53,8 +88,8 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <td>Topic</td>
-                        <td>Listing</td>
+                        <td>Catalog Number</td>
+                        <td>Course Title</td>
                         <td>Grade</td>
                     </tr>
                 </thead>
@@ -62,14 +97,17 @@
                     @foreach (var course in courses!)
                     {
                         <tr>
-                            <td>@course.Topic</td>
                             <td>@course.Listing</td>
+                            <td>@HttpUtility.HtmlDecode(course.Topic)</td>
                             <td>@course.Grade</td>
                         </tr>
                     }
                 </tbody>
             </table>
-            <button @onclick="SetBackgroundData">Import Data</button>
+            <span>
+                Everything look correct?
+                <button @onclick="SetBackgroundData">Import Data</button>
+            </span>
         }
 
     </div>
@@ -86,6 +124,8 @@
 
     private async Task HandleFileSubmission(InputFileChangeEventArgs e)
     {
+        if (e.File.Name != "WEBLIB_HCX_RE.htm") return;
+
         MemoryStream stream = new();
         await e.File.OpenReadStream().CopyToAsync(stream);
         stream.Position = 0;

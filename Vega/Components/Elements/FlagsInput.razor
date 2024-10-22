@@ -1,0 +1,59 @@
+﻿@typeparam TValue where TValue : Enum, IConvertible
+@inject IJSRuntime JSRuntime
+
+@code {
+    [Parameter] public required TValue Value { get; set; }
+    [Parameter] public required EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] public string? options { get; set; }
+
+    private IEnumerable<TValue> values = [];
+    private bool expanded = false;
+    private ElementReference clickReference;
+
+    protected override void OnInitialized()
+    {
+        string[] optionsArray = options?.Split(' ') ?? [];
+
+        values = (IEnumerable<TValue>)Enum.GetValues(typeof(TValue));
+        if (optionsArray.Contains("skipfirst")) values = values.Skip(1);
+        if (optionsArray.Contains("skiplast")) values = values.SkipLast(1);
+    }
+
+    public void ToggleExpanded()
+    {
+        expanded = !expanded;
+    }
+
+    public void Collapse()
+    {
+        expanded = false;
+        StateHasChanged();
+    }
+
+    public void ToggleValue(TValue value)
+    {
+        Value = (TValue)Enum.ToObject(typeof(TValue), Convert.ToByte(Value) ^ Convert.ToByte(value));
+    }
+}
+
+<div @ref="clickReference" class="flags_input" @onmouseleave="Collapse">
+
+    <span class="flags_input_button @(expanded ? "expanded" : "collapsed")" @onclick="ToggleExpanded">@Value</span>
+
+    @if (expanded)
+    {
+        <div class="flags_input_dropdown">
+            @foreach (var value in values)
+            {
+                var thisValue = value;
+                <div class="flags_input_dropdown_element">
+                    <label>
+                        <input type="checkbox" checked="@Value.HasFlag(thisValue)" @onclick="() => ToggleValue(thisValue)" />
+                        @value
+                    </label>
+                </div>
+            }
+        </div>
+    }
+
+</div>
