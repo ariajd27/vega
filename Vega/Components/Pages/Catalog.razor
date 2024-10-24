@@ -177,36 +177,40 @@
     }
     else if (courses.Any())
     {
+        int courseCount = courses.Count();
         <div class="page_body_spacer" />
         <div class="page_body_result">
             @foreach (var course in courses)
             {
-                <CollapsibleHeader>
+                <CollapsibleHeader IsExpanded="@(courseCount == 1)">
                     <HeaderContent>
                         @(course.AllCatalogNumbers()): @course.Title
                     </HeaderContent>
                     <ChildContent>
                         <p>@course.Description</p>
-                        @if (FormQuery?.Campus == "")
-                        {
-                            <p>campus: @course.FormattedCampus()</p>
-                        }
-                        <p>typically offered: @course.TypicalTerms</p>
-                        <p>credits: @course.FormattedNumCredits()</p>
-                        <p>requirements: @course.Requirements</p>
-                        @if (course.Attributes.Any())
-                        {
-                            <p>attributes:</p>
-                            <ul class="list">
-                                @foreach (var attr in course.Attributes)
-                                {
-                                    <li>
-                                        @attr.ToString()
-                                    </li>
-                                }
-                            </ul>
-                        }
-                        <p>internal id: @course.PittId</p>
+                        <p>Information:</p>
+                        <ul class="list">
+                            @if (FormQuery?.Campus == "")
+                            {
+                                <li>Campus: @course.FormattedCampus()</li>
+                            }
+                            <li>Typically offered: @course.TypicalTerms</li>
+                            <li>Credits: @course.FormattedNumCredits()</li>
+                            <li>Requirements: @course.Requirements</li>
+                            @if (course.Attributes.Any())
+                            {
+                                <li>Attributes:</li>
+                                <ul class="list">
+                                    @foreach (var attr in course.Attributes)
+                                    {
+                                        <li>
+                                            @attr.ToString()
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                            <li>Internal ID: @course.PittId</li>
+                        </ul>
                     </ChildContent>
                 </CollapsibleHeader>
             }
