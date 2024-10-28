@@ -3,6 +3,10 @@
 @rendermode InteractiveServer
 @using System.Text.Json
 @using System.ComponentModel.DataAnnotations
+@using Vega.Models
+@using Vega.Calculator
+@using Listing = Vega.Components.Elements.ListingInput.TinyListing
+@using Term = Vega.Components.Elements.TermInput.Term
 @inject VegaService VegaService
 @inject IJSRuntime JSRuntime
 
@@ -18,10 +22,10 @@
 
 <CookieDisclaimer />
 
-<CollapsibleHeader IsExpanded="true">
+<CollapsibleHeader @bind-IsExpanded="backgroundExpanded">
 
     <HeaderContent>
-        Previous Credits
+        Previous Courses
     </HeaderContent>
 
     <ChildContent>
@@ -31,7 +35,7 @@
             Alternatively, save time by <a href="planner/import">importing your unofficial transcript from PeopleSoft</a>.
         </p>
 
-        <EditForm Model="Background" OnSubmit="Submit" FormName="CatalogSearchForm">
+        <EditForm Model="Background" OnSubmit="SubmitBackground" FormName="BackgroundForm">
 
              <DataAnnotationsValidator />
              <ul class="form">
@@ -39,21 +43,7 @@
                     <span>Courses:</span>
                     @if (subjects != null)
                     {
-                        <span></span>
-                        <button type="button" @onclick="AppendInputListing">Add 1</button>
-                        <span>or</span>
-                        <button type="button" @onclick="AppendInputListings">Add</button>
-                        <InputNumber @bind-Value="Background.InputListingAddCount" />
-                        <ul class="list">
-                            @for (int i = 0; i < Background.Listings.Count; i++)
-                            {
-                                int index = i;
-                                <li>
-                                    <ListingInput Subjects="subjects" @bind-Value="Background.Listings[index]" />
-                                    <button type="button" @onclick="() => RemoveInputListing(Background.Listings[index])">Remove</button>
-                                </li>
-                            }
-                        </ul>
+                        <InputListings Subjects="subjects" @bind-Listings="Background.Listings" />
                     }
                     else
                     {
@@ -72,15 +62,134 @@
 
 </CollapsibleHeader>
 
+<CollapsibleHeader @bind-IsExpanded="todoExpanded">
+
+    <HeaderContent>
+        Future Courses
+    </HeaderContent>
+
+    <ChildContent>
+
+        <p>
+            Enter all courses you need to take before you graduate here.
+        </p>
+
+        <EditForm Model="Todo" OnSubmit="SubmitTodo" FormName="TodoForm">
+
+            <DataAnnotationsValidator />
+            <ul class="form">
+                <li>
+                    <span>Courses:</span>
+                    @if (subjects != null)
+                    {
+                        <InputListings Subjects="subjects" @bind-Listings="Todo.Listings" />
+                    }
+                    else
+                    {
+                        <emph> loading...</emph>
+                    }
+                </li>
+                <li>
+                    <button type="submit">Update</button>
+                </li>
+            </ul>
+            <ValidationSummary />
+
+        </EditForm>
+
+    </ChildContent>
+
+</CollapsibleHeader>
+
+<CollapsibleHeader @bind-IsExpanded="calculatorExpanded">
+
+    <HeaderContent>
+        Calculator
+    </HeaderContent>
+
+    <ChildContent>
+
+        <EditForm Model="Settings" OnSubmit="Calculate" FormName="CalculatorForm">
+
+            <ul class="form">
+
+                <li>
+                    First term to output a plan for:
+                    <TermInput @bind-Value="Settings.FirstTerm" />
+                </li>
+
+                <li>
+                    Expected graduation:
+                    <TermInput @bind-Value="Settings.LastTerm" />
+                </li>
+
+                <li>
+                    Maximum credit load per regular term (more than 18 means overload):
+                    <InputNumber @bind-Value="Settings.TermCreditMax" />
+                </li>
+
+                <li>
+                    Minimum credit load per term (12 or more for full-time):
+                    <InputNumber @bind-Value="Settings.TermCreditMin" />
+                </li>
+
+                <li>
+                    Maximum credit load per summer term (pay-per-credit):
+                    <InputNumber @bind-Value="Settings.SummerCreditMax" />
+                </li>
+
+            </ul>
+
+        </EditForm>
+
+        <span>
+            Check to make sure eveything is correct, then
+            <button type="submit">Calculate!</button>
+        </span>
+
+        @if (plan != null)
+        {
+            <h2>Calculated Plan</h2>
+
+            <ul class="list">
+                @foreach (var term in plan)
+                {
+                    <li>
+                        @term.Name
+                        <ul class="list">
+                            @foreach (var course in term.Courses)
+                            {
+                                <li>
+                                    @course.Name
+                                </li>
+                            }
+                        </ul>
+                    </li>
+                }
+            </ul>
+        }
+
+    </ChildContent>
+
+</CollapsibleHeader>
+
 @code {
-    [SupplyParameterFromForm]
-    private BackgroundType Background { get; set; } = new();
+    [SupplyParameterFromForm] private BackgroundType Background { get; set; } = new();
+    [SupplyParameterFromForm] private TodoType Todo { get; set; } = new();
+    [SupplyParameterFromForm] private SettingsType Settings { get; set; } = new();
+
+    private bool backgroundExpanded = true;
+    private bool todoExpanded = true;
+    private bool calculatorExpanded = true;
+
+    private IEnumerable<Vega.Calculator.Term>? plan;
 
     private string[]? subjects;
-    private int[]? courses;
 
     public static readonly string backgroundListingsCookieKey = "backgroundListings";
     public static readonly string backgroundCoursesCookieKey = "backgroundCourses";
+    public static readonly string todoListingsCookieKey = "todoListings";
+    public static readonly string todoCoursesCookieKey = "todoCourses";
     public static readonly string campusCookieKey = "campus";
 
     protected override void OnInitialized()
@@ -96,7 +205,7 @@
             subjects = dbSubjects.Select(s => s.Name).ToArray();
             StateHasChanged();
 
-            if (courses == null) await LoadCookiesAsync();
+            if (Background.Listings.Count == 0) await LoadCookiesAsync();
         }
     }
 
@@ -105,8 +214,15 @@
         var cookieResponse = await JSRuntime.InvokeAsync<string>("cookies.get", backgroundListingsCookieKey);
         if (!string.IsNullOrEmpty(cookieResponse))
         {
-            var cookieListings = JsonSerializer.Deserialize<ListingInput.TinyListing[]>(cookieResponse);
+            var cookieListings = JsonSerializer.Deserialize<Listing[]>(cookieResponse);
             if (cookieListings != null) Background.Listings.AddRange(cookieListings);
+        }
+
+        cookieResponse = await JSRuntime.InvokeAsync<string>("cookies.get", todoListingsCookieKey);
+        if (!string.IsNullOrEmpty(cookieResponse))
+        {
+            var cookieListings = JsonSerializer.Deserialize<Listing[]>(cookieResponse);
+            if (cookieListings != null) Todo.Listings.AddRange(cookieListings);
         }
 
         StateHasChanged();
@@ -114,47 +230,59 @@
 
     private async Task SetCookiesAsync()
     {
-        var dbCourses = await Task.WhenAll(Background.Listings.Select(async l => await VegaService.GetCourseByListingAsync(l.Subject, l.Number)));
-        courses = dbCourses.Where(c => c != null).Select(c => c!.Id).ToArray();
-
         await JSRuntime.InvokeVoidAsync("cookies.set", backgroundListingsCookieKey, JsonSerializer.Serialize(Background.Listings));
-        await JSRuntime.InvokeVoidAsync("cookies.set", backgroundCoursesCookieKey, JsonSerializer.Serialize(courses));
+        await JSRuntime.InvokeVoidAsync("cookies.set", backgroundCoursesCookieKey, JsonSerializer.Serialize(GetCourses(Background.Listings)));
+        await JSRuntime.InvokeVoidAsync("cookies.set", todoListingsCookieKey, JsonSerializer.Serialize(Todo.Listings));
+        await JSRuntime.InvokeVoidAsync("cookies.set", todoCoursesCookieKey, JsonSerializer.Serialize(GetCourses(Todo.Listings)));
     }
 
-    private async Task Submit()
+    private async Task<IEnumerable<int>> GetCourses(IEnumerable<Listing> listings)
+    {
+        var courses = await Task.WhenAll(listings.Select(async l => await VegaService.GetCourseByListingAsync(l.Subject, l.Number)));
+        return courses.Where(c => c != null).Select(c => c!.Id).ToArray();
+    }
+
+    private async Task SubmitBackground()
+    {
+        backgroundExpanded = false;
+        todoExpanded = true;
+        await SetCookiesAsync();
+    }
+
+    private async Task SubmitTodo()
     {
         await SetCookiesAsync();
     }
 
     private class BackgroundType()
     {
-        public List<ListingInput.TinyListing> Listings { get; set; } = [];
-
-        [Range(1, 99, ErrorMessage = "Number of courses to add must be positive.")]
-        public int InputListingAddCount { get; set; } = 5;
+        public List<Listing> Listings { get; set; } = [];
     }
 
-    public void RemoveInputListing(int index)
+    private class TodoType()
     {
-        Background.Listings.RemoveAt(index);
+        public List<Listing> Listings { get; set; } = [];
+    }
+
+    private class SettingsType()
+    {
+        [Required] public Term FirstTerm { get; set; } = new();
+        [Required] public Term LastTerm { get; set; } = new();
+
+        public int TermCreditMax { get; set; } = 16;
+        public int TermCreditMin { get; set; } = 12;
+        public int SummerCreditMax { get; set; } = 0;
+    }
+
+    private async Task Calculate()
+    {
+        var pastCourses = await GetCourses(Background.Listings);
+        var terms = Term.Range(Settings.FirstTerm, Settings.LastTerm);
+
+        Calculator calculator = new(VegaService, terms, pastCourses);
+        await calculator.Calculate(subjects!, Todo.Listings.Select(l => (l.Subject, l.Number)));
+        plan = calculator.GetTerms();
+
         StateHasChanged();
-    }
-
-    public void RemoveInputListing(ListingInput.TinyListing value)
-    {
-        Background.Listings.Remove(value);
-        StateHasChanged();
-    }
-
-    public void AppendInputListing()
-    {
-        Background.Listings.Add(new ListingInput.TinyListing("", 0));
-        StateHasChanged();
-    }
-
-    public void AppendInputListings()
-    {
-        if (Background.InputListingAddCount < 0) return;
-        Background.Listings.AddRange(Enumerable.Repeat(new ListingInput.TinyListing("", 0), Background.InputListingAddCount));
     }
 }

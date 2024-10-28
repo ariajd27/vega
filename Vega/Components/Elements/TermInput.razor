@@ -1,0 +1,65 @@
+﻿@code {
+    [Parameter] public Term Value { get; set; } = new();
+    [Parameter] public EventCallback<Term> ValueChanged { get; set; }
+
+    public class Term
+    {
+        public Terms Season { get; set; }
+        public int Year { get; set; }
+
+        public Term(Terms season, int year)
+        {
+            Season = season;
+            Year = year;
+        }
+
+        public Term()
+        {
+            var dateTime = DateTime.Now;
+
+            Year = dateTime.Year;
+
+            switch (dateTime.Month)
+            {
+                case 12:
+                case 1:
+                case 2:
+                case 3:
+                    Season = Terms.Summer;
+                    break;
+                case 4:
+                case 5:
+                case 6:
+                case 7:
+                case 8:
+                    Season = Terms.Fall;
+                    break;
+                case 9:
+                case 10:
+                case 11:
+                    Season = Terms.Spring;
+                    break;
+                default:
+                    throw new Exception("Somehow, a month that wasn't between 1 and 12 was returned from DateTime.Now.Month!");
+            }
+        }
+
+        public Term Next() => Season == Terms.Summer ? new(Terms.Fall, Year + 1) : new((Terms)((int)Season << 1), Year);
+
+        public static IEnumerable<Term> Range(Term start, Term end)
+        {
+            for (Term i = start; i != end; i = i.Next()) yield return i;
+            yield return end;
+        }
+
+        public override string ToString() => $"{Season} {Year}";
+    }
+}
+
+<InputSelect @bind-Value="Value.Season">
+    @foreach (Terms value in Enum.GetValues(typeof(Terms)).Cast<Terms>().Skip(1).SkipLast(1))
+    {
+        <option value="@value" selected="@(Value.Season == value)">@value</option>
+    }
+</InputSelect>
+<InputNumber @bind-Value="Value.Year" />

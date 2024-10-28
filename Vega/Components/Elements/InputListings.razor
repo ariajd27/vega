@@ -1,0 +1,29 @@
+﻿@using Listing = Vega.Components.Elements.ListingInput.TinyListing
+
+@code {
+    [Parameter] public required List<Listing> Listings { get; set; }
+    [Parameter] public EventCallback<List<Listing>> ListingsChanged { get; set; }
+    [Parameter] public required IEnumerable<string> Subjects { get; set; }
+
+    private int AddCount { get; set; } = 5;
+
+    private Listing NewListing()
+    {
+        return new("", 0);
+    }
+}
+
+<button type="button" @onclick="() => Listings.Add(NewListing())">Add 1</button>
+<span>or</span>
+<button type="button" @onclick="() => Listings.AddRange(Enumerable.Repeat(NewListing(), AddCount))">Add</button>
+<InputNumber @bind-Value="AddCount" />
+<ul class="list">
+    @for (int i = 0; i < Listings.Count; i++)
+    {
+        int index = i;
+        <li>
+            <ListingInput Subjects="Subjects" @bind-Value="Listings[index]" />
+            <button type="button" @onclick="() => Listings.RemoveAt(index)">Remove</button>
+        </li>
+    }
+</ul>

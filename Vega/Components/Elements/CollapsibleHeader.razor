@@ -10,14 +10,11 @@
 </div>
 
 @code {
-    [Parameter]
-    required public RenderFragment HeaderContent { get; set; }
+    [Parameter] required public RenderFragment HeaderContent { get; set; }
+    [Parameter] required public RenderFragment ChildContent { get; set; }
 
-    [Parameter]
-    required public RenderFragment ChildContent { get; set; }
-
-    [Parameter]
-    public bool IsExpanded { get; set; } = false;
+    [Parameter] public bool IsExpanded { get; set; } = false;
+    [Parameter] public EventCallback<bool> IsExpandedChanged { get; set; }
 
     private void Toggle()
     {
